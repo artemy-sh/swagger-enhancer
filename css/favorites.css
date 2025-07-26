@@ -1,6 +1,6 @@
 :root {
   --fav-star-default: #999;
-  --fav-star-active: #ffd700;
+  --fav-star-active: #edc500;
   --fav-star-exclude: #e74c3c;
 
   --fav-border-default: #d4d4d4;
@@ -50,23 +50,32 @@
 }
 
 /* ========================
-   FAVORITES FILTER BUTTON
+   FILTER CONTROL CONTAINER
 =========================== */
 
-#swagger-fav-control {
+.swagger-fav-control {
   position: absolute;
   top: 10px;
   left: 38px;
   z-index: 10000;
+  display: flex;
+  gap: 0px;
+  align-items: center;
+  font-size: 14px;
+  font-family: sans-serif;
 }
+
+/* ========================
+   FAVORITES FILTER BUTTON
+=========================== */
 
 .swagger-fav-filter-button {
   background: transparent;
   border: none;
   font-size: 18px;
   cursor: pointer;
-  padding: 4px;
-  opacity: .8;
+  padding: 1px 4px 4px 4px;
+  opacity: 0.8;
 }
 
 /* === STATES === */
@@ -84,22 +93,24 @@
 }
 
 /* ========================
-   FILTER CONTROL CONTAINER
-=========================== */
-
-.swagger-fav-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* ========================
    LABEL TEXT
 =========================== */
 
 .swagger-fav-label {
-  font-size: 13px;
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+.swagger-fav-label.state-0 {
   color: var(--fav-star-default);
+}
+
+.swagger-fav-label.state-1 {
+  color: var(--fav-star-active);
+}
+
+.swagger-fav-label.state-2 {
+  color: var(--fav-star-exclude);
 }
 
 /* ========================
@@ -107,15 +118,15 @@
 =========================== */
 
 .swagger-fav-reset {
-  font-size: 13px;
-  color: var(--fav-star-default);
-  text-decoration: underline;
   cursor: pointer;
-  user-select: none;
-  opacity: 0.8;
+  text-decoration: underline;
+  font-size: 14px;
+  margin-left: 15px;
+  color: var(--fav-star-default);
+  margin-top: -2px;
+  opacity: .6;
 }
 
 .swagger-fav-reset:hover {
   opacity: 1;
 }
-

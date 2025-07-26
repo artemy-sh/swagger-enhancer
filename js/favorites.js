@@ -131,6 +131,7 @@
     if (!container) {
       container = document.createElement('div');
       container.id = 'swagger-fav-control';
+      container.classList.add('swagger-fav-control');
       document.body.appendChild(container);
     }
 
@@ -140,26 +141,58 @@
     filterBtn.textContent = '★';
     filterBtn.type = 'button';
 
-    updateFilterButtonStyle(filterBtn);
+    const label = document.createElement('span');
+    label.className = 'swagger-fav-label';
+    label.style.cursor = 'pointer';
+
+    updateFilterButtonStyle(filterBtn, label);
+
+    label.addEventListener('click', () => {
+      filterBtn.click();
+    });
 
     filterBtn.addEventListener('click', () => {
       filterState = (filterState + 1) % 3;
       saveFilterState(filterState);
-      updateFilterButtonStyle(filterBtn);
+      updateFilterButtonStyle(filterBtn, label);
+      applyFavoriteFilter();
+    });
+
+    const reset = document.createElement('span');
+    reset.className = 'swagger-fav-reset';
+    reset.textContent = 'reset';
+    reset.style.cursor = 'pointer';
+    reset.addEventListener('click', () => {
+      localStorage.removeItem(FAVORITES_KEY);
+      document.querySelectorAll('.opblock-summary').forEach((summary) => {
+        const routeKey = getRouteKey(summary);
+        if (routeKey) markAsFavorite(summary, false);
+      });
       applyFavoriteFilter();
     });
 
     container.appendChild(filterBtn);
+    container.appendChild(label);
+    container.appendChild(reset);
   };
 
-  const updateFilterButtonStyle = (button) => {
+  const updateFilterButtonStyle = (button, label) => {
     button.classList.remove('state-0', 'state-1', 'state-2');
     button.classList.add(`state-${filterState}`);
-    button.title = {
+
+    const titles = {
       0: 'Show all',
-      1: 'Show only favorites',
+      1: 'Show favorites',
       2: 'Hide favorites'
-    }[filterState];
+    };
+
+    button.title = titles[filterState];
+
+    if (label) {
+      label.textContent = titles[filterState];
+      label.classList.remove('state-0', 'state-1', 'state-2');
+      label.classList.add(`state-${filterState}`);
+    }
   };
 
   const applyFavoriteFilter = () => {
@@ -182,7 +215,6 @@
       }
     });
 
-    // Hide empty tag groups
     document.querySelectorAll('.opblock-tag-section').forEach(section => {
       const hasVisible = Array.from(section.querySelectorAll('.opblock'))
         .some(opblock => opblock.style.display !== 'none');
