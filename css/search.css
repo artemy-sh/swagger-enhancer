@@ -1,0 +1,126 @@
+:root {
+  --search-bg: #fff;
+  --search-color: #000;
+  --search-border: #ccc;
+  --search-placeholder: #666;
+  --search-hover-bg: #f0f0f0;
+  --search-item-color: #333;
+  --route-tag-color: #222;
+  --route-path-color: #007acc;
+  --route-desc-color: #666;
+
+  --method-get: #61affe;
+  --method-post: #00b261;
+  --method-put: #e6a318;
+  --method-delete: #f93e3e;
+  --method-patch: #0fbcae;
+  --method-options: #0d5aa7;
+  --method-head: #8c43cd;
+}
+
+/* ========================
+   SEARCH CONTAINER STYLES
+=========================== */
+
+#swagger-search-container {
+  position: fixed;
+  top: 15px;
+  right: 20px;
+  z-index: 9999;
+  width: 450px;
+  font-family: sans-serif;
+}
+
+/* ========================
+   SEARCH INPUT
+=========================== */
+
+#swagger-search-container input[type="search"] {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid var(--search-border);
+  background-color: var(--search-bg);
+  color: var(--search-color);
+}
+
+/* ========================
+   DROPDOWN LIST
+=========================== */
+
+#swagger-search-container ul {
+  display: none;
+  list-style: none;
+  margin: 4px 0 0 0;
+  padding: 0;
+  max-height: 450px;
+  overflow-y: auto;
+  background: var(--search-bg);
+  border: 1px solid var(--search-border);
+  border-radius: 4px;
+}
+
+/* ========================
+   LIST ITEMS
+=========================== */
+
+#swagger-search-container li {
+  padding: 10px 13px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+  color: var(--search-item-color);
+}
+
+#swagger-search-container li:hover {
+  background-color: var(--search-hover-bg);
+}
+
+/* ========================
+   SEARCH RESULT ELEMENTS
+=========================== */
+
+#swagger-search-container li span.route-tag {
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--route-tag-color);
+}
+
+#swagger-search-container li span.route-method {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 2px 7px;
+  border-radius: 3px;
+  margin-right: 6px;
+  color: #fff;
+}
+
+#swagger-search-container li span.route-path {
+  font-size: 13px;
+  color: var(--route-path-color);
+  max-width: 430px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#swagger-search-container li div.route-desc {
+  font-size: 12px;
+  color: var(--route-desc-color);
+  padding-top: 3px;
+  max-width: 430px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ========================
+   METHOD COLORS
+=========================== */
+
+.route-method[data-method="GET"]    { background: var(--method-get); }
+.route-method[data-method="POST"]   { background: var(--method-post); }
+.route-method[data-method="PUT"]    { background: var(--method-put); }
+.route-method[data-method="DELETE"] { background: var(--method-delete); }
+.route-method[data-method="PATCH"]  { background: var(--method-patch); }
