@@ -8,7 +8,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   ) {
     chrome.scripting.insertCSS({
       target: { tabId: sender.tab.id },
-      files: ['css/dark.css'] // обновлённый путь
+      files: ['css/dark.css']
     }).catch((error) => {
       console.error('Failed to inject dark.css:', error);
     });
