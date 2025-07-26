@@ -1,0 +1,121 @@
+:root {
+  --fav-star-default: #999;
+  --fav-star-active: #ffd700;
+  --fav-star-exclude: #e74c3c;
+
+  --fav-border-default: #d4d4d4;
+  --fav-border-active: #ffd700;
+}
+
+/* ========================
+   FAVORITE STAR ICON
+=========================== */
+
+.swagger-fav-star {
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--fav-star-default);
+  margin: 0 10px 0 4px;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.swagger-favorite .swagger-fav-star {
+  color: var(--fav-star-active);
+}
+
+/* ========================
+   BORDER STYLES FOR BLOCKS
+=========================== */
+
+.swagger-fav-enabled .opblock-summary.opblock-summary {
+  border-left: 4px solid var(--fav-border-default);
+}
+
+.swagger-fav-enabled .opblock-summary.swagger-favorite {
+  border-left: 4px solid var(--fav-border-active) !important;
+}
+
+/* ========================
+   COLLAPSE BUTTON OVERRIDE
+=========================== */
+
+.opblock-summary .opblock-summary-control {
+  border: none !important;
+}
+
+.opblock-summary-control:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* ========================
+   FAVORITES FILTER BUTTON
+=========================== */
+
+#swagger-fav-control {
+  position: absolute;
+  top: 10px;
+  left: 38px;
+  z-index: 10000;
+}
+
+.swagger-fav-filter-button {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  opacity: .8;
+}
+
+/* === STATES === */
+
+.swagger-fav-filter-button.state-0 {
+  color: var(--fav-star-default);
+}
+
+.swagger-fav-filter-button.state-1 {
+  color: var(--fav-star-active);
+}
+
+.swagger-fav-filter-button.state-2 {
+  color: var(--fav-star-exclude);
+}
+
+/* ========================
+   FILTER CONTROL CONTAINER
+=========================== */
+
+.swagger-fav-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ========================
+   LABEL TEXT
+=========================== */
+
+.swagger-fav-label {
+  font-size: 13px;
+  color: var(--fav-star-default);
+}
+
+/* ========================
+   RESET LINK
+=========================== */
+
+.swagger-fav-reset {
+  font-size: 13px;
+  color: var(--fav-star-default);
+  text-decoration: underline;
+  cursor: pointer;
+  user-select: none;
+  opacity: 0.8;
+}
+
+.swagger-fav-reset:hover {
+  opacity: 1;
+}
+

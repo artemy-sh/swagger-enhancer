@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "Swagger Enhancer",
+  "version": "0.5",
+  "description": "Enhances the Swagger UI experience with visual and usability improvements.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icon16.png",
+      "32": "assets/icon32.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "js/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*/*docs*"],
+      "js": ["js/theme.js", "js/search.js", "js/favorites.js"],
+      "css": ["css/search.css", "css/favorites.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "css/search.css",
+        "css/favorites.css",
+        "css/dark.css"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "icons": {
+    "16": "assets/icon16.png",
+    "32": "assets/icon32.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
+  },
+  "permissions": ["scripting", "tabs", "storage"],
+  "host_permissions": ["<all_urls>"]
+}

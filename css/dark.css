@@ -1,0 +1,365 @@
+/* ========================
+   COLOR VARIABLES
+=========================== */
+:root {
+  --bg-color: #121212;
+  --text-color: #e0e0e0;
+  --text-light: #cdcdcd;
+  --surface-color: #1e1e1e;
+  --surface-alt: #1f1f1f;
+  --border-color: #333;
+  --input-bg: #2b2b2b;
+  --input-border: #555;
+  --btn-bg: #333;
+  --btn-hover-bg: #444;
+
+  /* Method Colors */
+  --method-get: #61affe;
+  --method-post: #00b261;
+  --method-put: #e6a318;
+  --method-delete: #f93e3e;
+  --method-patch: #0fbcae;
+  --method-options: #0d5aa7;
+  --method-head: #8c43cd;
+
+  --type-color: #90caf9;
+  --link-color: #dddddd;
+  --path-color: #4ea1f7;
+  --lock-color: #49cc90
+}
+
+/* ========================
+   GLOBAL BACKGROUND & TEXT
+=========================== */
+html,
+body,
+.swagger-ui,
+.swagger-container {
+  background-color: var(--bg-color) !important;
+  color: var(--text-color) !important;
+}
+
+/* ========================
+   TOPBAR
+=========================== */
+.topbar {
+  background-color: var(--surface-alt) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+/* ========================
+   HEADERS & TITLES
+=========================== */
+.swagger-ui .info,
+.swagger-ui .info p,
+.swagger-ui .markdown,
+.swagger-ui .info__title,
+.swagger-ui .info__version {
+  color: var(--text-color) !important;
+}
+
+.swagger-ui .info .title {
+  color: #f4f4f4 !important;
+}
+
+.swagger-ui .tab li button.tablinks {
+  color: var(--text-color) !important;
+}
+
+/* ========================
+   ANCHORS & LINKS
+=========================== */
+.swagger-ui a,
+.swagger-ui a:visited,
+.swagger-ui a.nostyle,
+.swagger-ui a.nostyle:visited {
+  color: var(--link-color) !important;
+}
+
+/* ========================
+   OPBLOCK / TAG SECTIONS
+=========================== */
+.opblock,
+.opblock-tag-section,
+.opblock-section-header,
+.opblock-summary,
+.opblock-description-wrapper p,
+.markdown p,
+.opblock-tag {
+  background-color: var(--surface-color) !important;
+  color: var(--text-color) !important;
+  border-color: var(--border-color) !important;
+}
+
+.swagger-ui .opblock .opblock-section-header {
+  background-color: var(--surface-alt) !important;
+}
+
+.swagger-ui .opblock .opblock-summary-description {
+  color: #b0bec5 !important;
+}
+
+.opblock.opblock-get .opblock-summary-method {
+  background-color: var(--method-get) !important;
+  color: var(--text-color) !important;
+}
+
+.opblock.opblock-post .opblock-summary-method {
+  background-color: var(--method-post) !important;
+  color: var(--text-color) !important;
+}
+
+.opblock.opblock-put .opblock-summary-method {
+  background-color: var(--method-put) !important;
+  color: var(--text-color) !important;
+}
+
+.opblock.opblock-delete .opblock-summary-method {
+  background-color: var(--method-delete) !important;
+  color: var(--text-color) !important;
+}
+
+.opblock.opblock-patch .opblock-summary-method {
+  background-color: var(--method-patch) !important;
+  color: var(--text-color) !important;
+}
+
+.opblock.opblock-options .opblock-summary-method {
+  background-color: var(--method-options) !important;
+  color: var(--text-color) !important;
+}
+
+.opblock.opblock-head .opblock-summary-method {
+  background-color: var(--method-head) !important;
+  color: var(--text-color) !important;
+}
+
+.opblock-section-header h4,
+.opblock-section-header label {
+  color: var(--text-color) !important;
+}
+
+/* ========================
+   PARAMETERS / TABLES / FORMS
+=========================== */
+.parameters,
+.responses-inner,
+.request-body,
+.response-col_description__inner,
+.model-example,
+table,
+th,
+td,
+.responses-table,
+.swagger-ui .json-schema-2020-12-accordion {
+  background: none !important;
+  color: var(--text-color) !important;
+  border-color: var(--border-color) !important;
+}
+
+.response-col_status {
+  background-color: var(--surface-color) !important;
+  color: var(--text-color) !important;
+}
+
+input,
+textarea,
+select {
+  background-color: var(--input-bg) !important;
+  color: var(--text-color) !important;
+  border: 1px solid var(--input-border) !important;
+}
+
+/* ========================
+   BUTTONS
+=========================== */
+.btn,
+.try-out__btn,
+.execute-wrapper .btn,
+.cancel,
+.swagger-ui .collapse-button,
+.swagger-ui .collapse-button span {
+  background-color: var(--btn-bg) !important;
+  color: var(--text-color) !important;
+  border: 1px solid var(--input-border) !important;
+}
+
+.btn:hover,
+.try-out__btn:hover,
+.execute-wrapper .btn:hover,
+.cancel:hover,
+.swagger-ui .collapse-button:hover,
+.swagger-ui .collapse-button span:hover {
+  background-color: var(--btn-hover-bg) !important;
+}
+
+.swagger-ui .btn.execute {
+  background-color: #4990e2 !important;
+  color: #ffffff !important;
+}
+
+/* ========================
+   REMOVE FOCUS OUTLINE
+=========================== */
+.swagger-ui .model-box-control:focus,
+.swagger-ui .models-control:focus,
+.swagger-ui .opblock-summary-control:focus {
+  outline: none !important;
+}
+
+/* ========================
+   SCHEMAS / MODELS
+=========================== */
+.model-title,
+.model-title span,
+.model-box,
+.model-box-control,
+.model-container {
+  background-color: var(--surface-color) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.property-type,
+.prop-format,
+.prop-enum,
+.prop-default,
+.model {
+  color: var(--type-color) !important;
+}
+
+.array-item-type,
+.array-item-type span {
+  color: var(--text-color) !important;
+}
+
+.arrow,
+.arrow span {
+  filter: invert(80%);
+}
+
+.swagger-ui .json-schema-2020-12-expand-deep-button {
+  background: none !important;
+  color: var(--text-color) !important;
+}
+
+.swagger-ui .json-schema-2020-12-accordion__icon svg,
+.swagger-ui .json-schema-2020-12-accordion__icon--expanded svg {
+  fill: var(--text-color) !important;
+  stroke: var(--text-color) !important;
+  color: var(--text-color) !important;
+  filter: none !important;
+}
+
+/* ========================
+   AUTHORIZATION ICONS
+=========================== */
+.swagger-ui .authorization__btn .unlocked {
+  fill: var(--text-color) !important;
+  stroke: var(--text-color) !important;
+  color: var(--text-color) !important;
+  filter: none !important;
+}
+
+.swagger-ui .authorization__btn .locked {
+  fill: var(--lock-color) !important;
+  stroke: var(--lock-color) !important;
+  color: var(--lock-color) !important;
+  filter: none !important;
+}
+
+/* ========================
+   RESPONSE HEADINGS
+=========================== */
+.swagger-ui .responses-inner h4,
+.swagger-ui .responses-inner h5 {
+  color: var(--text-color) !important;
+}
+
+/* ========================
+   SCHEME SELECTOR
+=========================== */
+.swagger-ui .scheme-container {
+  background: none !important;
+}
+
+/* ========================
+   DIALOGS / MODALS
+=========================== */
+.swagger-ui .dialog-ux .modal-ux {
+  background: #000 !important;
+  border: 1px solid #2d2d2d !important;
+  box-shadow: none !important;
+}
+
+.swagger-ui .dialog-ux .modal-ux-header {
+  border-bottom: 1px solid #2d2d2d !important;
+}
+
+.swagger-ui .dialog-ux .modal-ux-content p {
+  color: var(--text-light) !important;
+}
+
+.swagger-ui .dialog-ux .modal-ux-content h4,
+.swagger-ui .dialog-ux .modal-ux-header h3 {
+  color: var(--text-light) !important;
+}
+
+.swagger-ui label {
+  color: var(--text-light) !important;
+}
+
+/* ========================
+   SEARCH EXTENSION
+=========================== */
+#swagger-search-container input[type="search"] {
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  border: 1px solid var(--input-border);
+}
+
+#swagger-search-container ul {
+  background: var(--surface-color);
+  border: 1px solid #444;
+}
+
+#swagger-search-container li {
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-color);
+}
+
+#swagger-search-container li:hover {
+  background-color: var(--btn-bg);
+}
+
+#swagger-search-container li span.route-tag {
+  color: #ffffff;
+}
+
+#swagger-search-container li span.route-method {
+  color: #fff;
+}
+
+#swagger-search-container li span.route-path {
+  color: var(--path-color);
+}
+
+#swagger-search-container li div.route-desc {
+  color: #bbb;
+}
+
+/* ========================
+   FAVORITES
+=========================== */
+
+.swagger-fav-enabled .opblock-summary.opblock-summary {
+  border-left: 4px solid #464646 !important;
+}
+
+.swagger-fav-enabled .opblock-summary.swagger-favorite {
+  border-left: 4px solid #ba9d00 !important;
+}
+
+.swagger-favorite .swagger-fav-star {
+  color: #ba9d00;
+}
