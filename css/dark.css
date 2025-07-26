@@ -363,3 +363,10 @@ select {
 .swagger-favorite .swagger-fav-star {
   color: #ba9d00;
 }
+
+/* ========================
+   SCROLL_TOP
+=========================== */
+.swagger-scroll-top {
+  opacity: .3;
+}

@@ -1,0 +1,30 @@
+:root {
+  --scroll-top-bg: #8abf05;
+}
+
+.swagger-scroll-top {
+  position: fixed;
+  bottom: 24px;
+  right: 80px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: var(--scroll-top-bg);
+  cursor: pointer;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+  opacity: 0.4;
+}
+
+.swagger-scroll-top:hover {
+  opacity: 1;
+}
+
+.swagger-scroll-top svg.top-arrow {
+  width: 20px;
+  height: 20px;
+  fill: white !important;
+}

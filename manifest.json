@@ -18,8 +18,17 @@
   "content_scripts": [
     {
       "matches": ["*://*/*docs*"],
-      "js": ["js/theme.js", "js/search.js", "js/favorites.js"],
-      "css": ["css/search.css", "css/favorites.css"],
+      "js": [
+        "js/theme.js",
+        "js/search.js",
+        "js/favorites.js",
+        "js/scroll_top.js"
+      ],
+      "css": [
+        "css/search.css",
+        "css/favorites.css",
+        "css/scroll_top.css"
+      ],
       "run_at": "document_idle"
     }
   ],
@@ -28,7 +37,8 @@
       "resources": [
         "css/search.css",
         "css/favorites.css",
-        "css/dark.css"
+        "css/dark.css",
+        "css/scroll_top.css"
       ],
       "matches": ["<all_urls>"]
     }
