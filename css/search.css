@@ -97,9 +97,10 @@
 }
 
 #swagger-search-container li span.route-path {
+  display: inline-flex;
   font-size: 13px;
   color: var(--route-path-color);
-  max-width: 430px;
+  max-width: 370px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
