@@ -1,91 +1,78 @@
-// popup.js — handles UI toggle switches and communicates with content script
+// popup.js ─ manages UI switches and notifies the active Swagger tab
 
 document.addEventListener('DOMContentLoaded', () => {
-  const toggle = document.getElementById('toggle');               // Theme toggle checkbox
-  const searchToggle = document.getElementById('searchToggle');   // Search toggle checkbox
-  const favoritesToggle = document.getElementById('favoritesToggle'); // Favorites toggle checkbox
-  const scrollTopToggle = document.getElementById('scrollTopToggle'); // Scroll to Top toggle checkbox
-  const container = document.getElementById('container');         // Popup container for styling
+  // === Controls ===
+  const themeToggle       = document.getElementById('toggle');                // dark / light
+  const searchToggle      = document.getElementById('searchToggle');          // search bar
+  const favoritesToggle   = document.getElementById('favoritesToggle');       // favourites
+  const scrollTopToggle   = document.getElementById('scrollTopToggle');       // “scroll‑to‑top”
+  const hideRespToggle    = document.getElementById('hideResponsesToggle');   // hide default responses
+  const container         = document.getElementById('container');
 
-  // Load current settings from Chrome storage
+  // === Initial state ===
   chrome.storage.sync.get(
-    ['darkThemeEnabled', 'swaggerSearchEnabled', 'swaggerFavoritesEnabled', 'scrollTopEnabled'],
-    (result) => {
-      const darkEnabled = !!result.darkThemeEnabled;
-      toggle.checked = darkEnabled;
-      updateTheme(darkEnabled);
+    [
+      'darkThemeEnabled',
+      'swaggerSearchEnabled',
+      'swaggerFavoritesEnabled',
+      'scrollTopEnabled',
+      'hideResponsesEnabled',
+    ],
+    (cfg) => {
+      // theme
+      themeToggle.checked = !!cfg.darkThemeEnabled;
+      updateTheme(themeToggle.checked);
 
-      const searchEnabled = !!result.swaggerSearchEnabled;
-      if (searchToggle) {
-        searchToggle.checked = searchEnabled;
-      }
-
-      const favoritesEnabled = result.swaggerFavoritesEnabled === true;
-      if (favoritesToggle) {
-        favoritesToggle.checked = favoritesEnabled;
-      }
-
-      const scrollTopEnabled = result.scrollTopEnabled === true;
-      if (scrollTopToggle) {
-        scrollTopToggle.checked = scrollTopEnabled;
-      }
-    }
+      // other switches
+      if (searchToggle)    searchToggle.checked  = !!cfg.swaggerSearchEnabled;
+      if (favoritesToggle) favoritesToggle.checked = !!cfg.swaggerFavoritesEnabled;
+      if (scrollTopToggle) scrollTopToggle.checked = !!cfg.scrollTopEnabled;
+      if (hideRespToggle)  hideRespToggle.checked  = !!cfg.hideResponsesEnabled;
+    },
   );
 
-  // Handle theme toggle
-  toggle.addEventListener('change', () => {
-    const enabled = toggle.checked;
+  // === Listeners ===
+  themeToggle.addEventListener('change', () => {
+    const enabled = themeToggle.checked;
     chrome.storage.sync.set({ darkThemeEnabled: enabled }, () => {
       updateTheme(enabled);
       notifyContent('TOGGLE_THEME', enabled);
     });
   });
 
-  // Handle search toggle
-  if (searchToggle) {
-    searchToggle.addEventListener('change', () => {
-      const enabled = searchToggle.checked;
-      chrome.storage.sync.set({ swaggerSearchEnabled: enabled }, () => {
-        notifyContent('TOGGLE_SEARCH', enabled);
+  attachSimpleToggle(searchToggle,    'swaggerSearchEnabled',   'TOGGLE_SEARCH');
+  attachSimpleToggle(favoritesToggle, 'swaggerFavoritesEnabled','TOGGLE_FAVORITES');
+  attachSimpleToggle(scrollTopToggle, 'scrollTopEnabled',       'TOGGLE_SCROLL_TOP');
+  attachSimpleToggle(hideRespToggle,  'hideResponsesEnabled',   'TOGGLE_HIDE_RESPONSES');
+
+  // === Helpers ===
+
+  /**
+   * Attaches a change‑handler that stores the toggle value
+   * and notifies the content script.
+   */
+  function attachSimpleToggle(el, storageKey, msgType) {
+    if (!el) return;
+    el.addEventListener('change', () => {
+      const enabled = el.checked;
+      chrome.storage.sync.set({ [storageKey]: enabled }, () => {
+        notifyContent(msgType, enabled);
       });
     });
   }
 
-  // Handle favorites toggle
-  if (favoritesToggle) {
-    favoritesToggle.addEventListener('change', () => {
-      const enabled = favoritesToggle.checked;
-      chrome.storage.sync.set({ swaggerFavoritesEnabled: enabled }, () => {
-        notifyContent('TOGGLE_FAVORITES', enabled);
-      });
-    });
-  }
-
-  // Handle scroll-to-top toggle
-  if (scrollTopToggle) {
-    scrollTopToggle.addEventListener('change', () => {
-      const enabled = scrollTopToggle.checked;
-      chrome.storage.sync.set({ scrollTopEnabled: enabled }, () => {
-        notifyContent('TOGGLE_SCROLL_TOP', enabled);
-      });
-    });
-  }
-
-  // Send message to content script
+  /** Notify the active tab’s content script. */
   function notifyContent(type, enabled) {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]?.id) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          type,
-          enabled
-        });
+        chrome.tabs.sendMessage(tabs[0].id, { type, enabled });
       }
     });
   }
 
-  // Update popup container theme class
-  function updateTheme(enabled) {
-    container.classList.toggle('dark', enabled);
-    container.classList.toggle('light', !enabled);
+  /** Switch popup theme. */
+  function updateTheme(isDark) {
+    container.classList.toggle('dark',  isDark);
+    container.classList.toggle('light', !isDark);
   }
 });
