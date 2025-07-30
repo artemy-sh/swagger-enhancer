@@ -22,7 +22,8 @@
         "js/theme.js",
         "js/search.js",
         "js/favorites.js",
-        "js/scroll_top.js"
+        "js/scroll_top.js",
+        "js/hide_responses.js"
       ],
       "css": [
         "css/search.css",
