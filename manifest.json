@@ -23,12 +23,14 @@
         "js/search.js",
         "js/favorites.js",
         "js/scroll_top.js",
-        "js/hide_responses.js"
+        "js/hide_responses.js",
+        "js/github_link.js"
       ],
       "css": [
         "css/search.css",
         "css/favorites.css",
-        "css/scroll_top.css"
+        "css/scroll_top.css",
+        "css/github_link.css"
       ],
       "run_at": "document_idle"
     }
@@ -39,7 +41,8 @@
         "css/search.css",
         "css/favorites.css",
         "css/dark.css",
-        "css/scroll_top.css"
+        "css/scroll_top.css",
+        "css/github_link.css"
       ],
       "matches": ["<all_urls>"]
     }

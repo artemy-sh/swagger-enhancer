@@ -370,3 +370,16 @@ select {
 .swagger-scroll-top {
   opacity: .3;
 }
+
+/* ========================
+   GITHUB_LINK
+=========================== */
+#swagger-github-link {
+  opacity: 0.3 !important;
+  color: white !important;
+}
+
+#swagger-github-link:hover {
+  opacity: 1 !important;
+  color: #ffffff !important;
+}
