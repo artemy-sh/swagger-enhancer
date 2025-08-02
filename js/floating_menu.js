@@ -6,7 +6,6 @@
   container.id = id;
   container.className = 'swagger-floating-menu';
 
-  // левая и правая части меню
   const left = document.createElement('div');
   left.className = 'swagger-menu-left';
 

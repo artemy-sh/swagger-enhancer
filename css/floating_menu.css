@@ -18,7 +18,7 @@ body{
   z-index: 9999;
   display: flex;
   align-items: center;
-  justify-content: space-between; /* Разделяет левый и правый блок */
+  justify-content: space-between;
   padding: 0 20px;
   background: var(--swagger-menu-bg);
   color: var(--swagger-menu-text);
