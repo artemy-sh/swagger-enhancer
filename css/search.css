@@ -54,10 +54,10 @@
 
 #swagger-search-container ul {
   position: absolute;
-  top: 100%;         /* сразу под input */
+  top: 100%;
   left: 0;
   width: 100%;
-  z-index: 10000;     /* поверх меню */
+  z-index: 10000;
   display: none;
   list-style: none;
   margin: 0;
@@ -67,7 +67,7 @@
   background: var(--search-bg);
   border: 1px solid var(--search-border);
   border-radius: 4px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* для читаемости */
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
 /* ========================
