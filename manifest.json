@@ -19,6 +19,7 @@
     {
       "matches": ["*://*/*docs*"],
       "js": [
+        "js/floating_menu.js",
         "js/theme.js",
         "js/search.js",
         "js/favorites.js",
@@ -27,6 +28,7 @@
         "js/github_link.js"
       ],
       "css": [
+        "css/floating_menu.css",
         "css/search.css",
         "css/favorites.css",
         "css/scroll_top.css",
@@ -38,6 +40,7 @@
   "web_accessible_resources": [
     {
       "resources": [
+        "css/floating_menu.css",
         "css/search.css",
         "css/favorites.css",
         "css/dark.css",

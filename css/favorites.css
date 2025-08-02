@@ -54,13 +54,9 @@
 =========================== */
 
 .swagger-fav-control {
-  position: absolute;
-  top: 10px;
-  left: 25px;
-  z-index: 10000;
   display: flex;
-  gap: 0px;
   align-items: center;
+  gap: 6px;
   font-size: 14px;
   font-family: sans-serif;
 }
