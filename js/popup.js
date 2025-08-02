@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const favoritesToggle   = document.getElementById('favoritesToggle');       // favourites
   const scrollTopToggle   = document.getElementById('scrollTopToggle');       // “scroll‑to‑top”
   const hideRespToggle    = document.getElementById('hideResponsesToggle');   // hide default responses
+  const hideSchemasToggle = document.getElementById('hideSchemasToggle');     // hide schemas
   const container         = document.getElementById('container');
 
   // === Initial state ===
@@ -17,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
       'swaggerFavoritesEnabled',
       'scrollTopEnabled',
       'hideResponsesEnabled',
+      'hideSchemasEnabled',
     ],
     (cfg) => {
       // theme
@@ -24,10 +26,11 @@ document.addEventListener('DOMContentLoaded', () => {
       updateTheme(themeToggle.checked);
 
       // other switches
-      if (searchToggle)    searchToggle.checked  = !!cfg.swaggerSearchEnabled;
-      if (favoritesToggle) favoritesToggle.checked = !!cfg.swaggerFavoritesEnabled;
-      if (scrollTopToggle) scrollTopToggle.checked = !!cfg.scrollTopEnabled;
-      if (hideRespToggle)  hideRespToggle.checked  = !!cfg.hideResponsesEnabled;
+      if (searchToggle)       searchToggle.checked       = !!cfg.swaggerSearchEnabled;
+      if (favoritesToggle)    favoritesToggle.checked    = !!cfg.swaggerFavoritesEnabled;
+      if (scrollTopToggle)    scrollTopToggle.checked    = !!cfg.scrollTopEnabled;
+      if (hideRespToggle)     hideRespToggle.checked     = !!cfg.hideResponsesEnabled;
+      if (hideSchemasToggle)  hideSchemasToggle.checked  = !!cfg.hideSchemasEnabled;
     },
   );
 
@@ -40,10 +43,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  attachSimpleToggle(searchToggle,    'swaggerSearchEnabled',   'TOGGLE_SEARCH');
-  attachSimpleToggle(favoritesToggle, 'swaggerFavoritesEnabled','TOGGLE_FAVORITES');
-  attachSimpleToggle(scrollTopToggle, 'scrollTopEnabled',       'TOGGLE_SCROLL_TOP');
-  attachSimpleToggle(hideRespToggle,  'hideResponsesEnabled',   'TOGGLE_HIDE_RESPONSES');
+  attachSimpleToggle(searchToggle,      'swaggerSearchEnabled',   'TOGGLE_SEARCH');
+  attachSimpleToggle(favoritesToggle,   'swaggerFavoritesEnabled','TOGGLE_FAVORITES');
+  attachSimpleToggle(scrollTopToggle,   'scrollTopEnabled',       'TOGGLE_SCROLL_TOP');
+  attachSimpleToggle(hideRespToggle,    'hideResponsesEnabled',   'TOGGLE_HIDE_RESPONSES');
+  attachSimpleToggle(hideSchemasToggle, 'hideSchemasEnabled',     'TOGGLE_HIDE_SCHEMAS');
 
   // === Helpers ===
 

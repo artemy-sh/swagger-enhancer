@@ -394,3 +394,15 @@ select {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   backdrop-filter: var(--swagger-menu-blur);
 }
+
+/* ========================
+   HIDE_SCHEMAS
+=========================== */
+
+.models-control svg path {
+  fill: white !important;
+}
+
+.swagger-ui section.models h4{
+  background-color: var(--surface-color) !important;
+}
