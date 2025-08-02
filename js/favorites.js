@@ -1,6 +1,6 @@
 (() => {
   const FAVORITES_KEY = 'swaggerFavorites';
-  const FILTER_STATE_KEY = 'swaggerFavoritesFilterState'; // 0 = all, 1 = only favorites, 2 = exclude favorites
+  const FILTER_STATE_KEY = 'swaggerFavoritesFilterState';
   const STYLE_HREF = chrome.runtime.getURL('css/favorites.css');
 
   let favoritesEnabled = false;
@@ -101,6 +101,7 @@
     document.querySelectorAll('.swagger-favorite').forEach(el => el.classList.remove('swagger-favorite'));
     document.querySelectorAll('.opblock-summary').forEach(el => delete el.dataset.favApplied);
     document.getElementById('swagger-fav-filter')?.remove();
+    document.getElementById('swagger-fav-control')?.remove();
   };
 
   const toggleFavorite = (routeKey, summaryEl, isFavorited) => {
@@ -127,13 +128,9 @@
   const insertFavoritesFilter = () => {
     if (document.getElementById('swagger-fav-filter')) return;
 
-    let container = document.getElementById('swagger-fav-control');
-    if (!container) {
-      container = document.createElement('div');
-      container.id = 'swagger-fav-control';
-      container.classList.add('swagger-fav-control');
-      document.body.appendChild(container);
-    }
+    const container = document.createElement('div');
+    container.id = 'swagger-fav-control';
+    container.classList.add('swagger-fav-control');
 
     const filterBtn = document.createElement('button');
     filterBtn.id = 'swagger-fav-filter';
@@ -147,9 +144,7 @@
 
     updateFilterButtonStyle(filterBtn, label);
 
-    label.addEventListener('click', () => {
-      filterBtn.click();
-    });
+    label.addEventListener('click', () => filterBtn.click());
 
     filterBtn.addEventListener('click', () => {
       filterState = (filterState + 1) % 3;
@@ -174,6 +169,14 @@
     container.appendChild(filterBtn);
     container.appendChild(label);
     container.appendChild(reset);
+
+    const leftMenu = document.querySelector('#swagger-floating-menu .swagger-menu-left');
+    if (leftMenu) {
+      leftMenu.appendChild(container);
+    } else {
+      const menu = document.getElementById('swagger-floating-menu');
+      (menu || document.body).appendChild(container);
+    }
   };
 
   const updateFilterButtonStyle = (button, label) => {
@@ -205,14 +208,9 @@
       if (!routeKey) return;
 
       const isFavorite = !!favorites[routeKey];
-
-      if (filterState === 0) {
-        opblock.style.display = '';
-      } else if (filterState === 1) {
-        opblock.style.display = isFavorite ? '' : 'none';
-      } else {
-        opblock.style.display = isFavorite ? 'none' : '';
-      }
+      if (filterState === 0) opblock.style.display = '';
+      else if (filterState === 1) opblock.style.display = isFavorite ? '' : 'none';
+      else opblock.style.display = isFavorite ? 'none' : '';
     });
 
     document.querySelectorAll('.opblock-tag-section').forEach(section => {

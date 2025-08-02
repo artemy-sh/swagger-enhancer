@@ -17,5 +17,7 @@
     </svg>
     <span>artemy-sh/swagger-enhancer</span>
   `;
-  document.body.appendChild(link);
+
+  const menuRight = document.querySelector('#swagger-floating-menu .swagger-menu-right');
+  if (menuRight) menuRight.appendChild(link);
 })();

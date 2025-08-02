@@ -383,3 +383,14 @@ select {
   opacity: 1 !important;
   color: #ffffff !important;
 }
+
+/* ========================
+   FLOATING_MENU
+=========================== */
+
+#swagger-floating-menu {
+  background: var(--surface-color);
+  color: var(--swagger-menu-text);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  backdrop-filter: var(--swagger-menu-blur);
+}

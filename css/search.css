@@ -23,13 +23,16 @@
 =========================== */
 
 #swagger-search-container {
-  position: fixed;
-  top: 15px;
-  right: 20px;
+  position: relative;
   z-index: 9999;
   width: 450px;
   font-family: sans-serif;
+  display: flex;
+  align-items: stretch;
+  flex-direction: column;
+  gap: 4px;
 }
+
 
 /* ========================
    SEARCH INPUT
@@ -50,15 +53,21 @@
 =========================== */
 
 #swagger-search-container ul {
+  position: absolute;
+  top: 100%;         /* сразу под input */
+  left: 0;
+  width: 100%;
+  z-index: 10000;     /* поверх меню */
   display: none;
   list-style: none;
-  margin: 4px 0 0 0;
+  margin: 0;
   padding: 0;
   max-height: 450px;
   overflow-y: auto;
   background: var(--search-bg);
   border: 1px solid var(--search-border);
   border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* для читаемости */
 }
 
 /* ========================
