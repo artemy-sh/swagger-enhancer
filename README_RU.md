@@ -5,7 +5,7 @@
 [![Chrome / Edge](https://img.shields.io/badge/platform-Chrome%20%7C%20Edge%20%7C%20Yandex-blue)](#установка)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![UI Enhancer](https://img.shields.io/badge/type-Swagger%20UI%20enhancer-orange)](#описание)
-[![Version](https://img.shields.io/badge/version-0.5.0-lightgrey)](#история-версий)
+[![Version](https://img.shields.io/badge/version-1.0.0-lightgrey)](#история-версий)
 
 #### Содержание
 
@@ -70,10 +70,11 @@
 
 ### Установка
 
-#### Установка из Chrome Web Store
+#### Установка из Opera Addons
 
-> **Ссылка появится после публикации**
-> Откройте страницу расширения и нажмите **Add to Chrome**.
+> https://addons.opera.com/ru/extensions/
+> 
+> Откройте страницу расширения и нажмите **Add to Browser**.
 > Иконка появится в панели браузера.
 
 #### Ручная установка

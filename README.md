@@ -5,7 +5,7 @@
 [![Chrome / Edge](https://img.shields.io/badge/platform-Chrome%20%7C%20Edge-blue)](#установка)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![UI Enhancer](https://img.shields.io/badge/type-Swagger%20UI%20enhancer-orange)](#описание)
-[![Version](https://img.shields.io/badge/version-0.5.0-lightgrey)](#история-версий)
+[![Version](https://img.shields.io/badge/version-1.0.0-lightgrey)](#история-версий)
 
 #### Table of Contents
 
@@ -70,9 +70,10 @@ It adds custom interface settings including dark mode, search bar, hiding of res
 
 ### Installation
 
-#### Install from Chrome Web Store
+#### Install from Opera Addons
 
-> **Link will appear after publishing**
+> https://addons.opera.com/ru/extensions/
+> 
 > Open the extension page and click **Add to Chrome**.
 > The icon will appear in the browser toolbar.
 
