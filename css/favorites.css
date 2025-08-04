@@ -95,11 +95,11 @@
 .swagger-fav-label {
   cursor: pointer;
   margin-left: 4px;
+  margin-right: 20px;
 }
 
 .swagger-fav-label.state-0 {
   color: var(--fav-star-default);
-  margin-right: 20px;
 }
 
 .swagger-fav-label.state-1 {
