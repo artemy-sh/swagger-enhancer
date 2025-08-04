@@ -153,6 +153,24 @@
       applyFavoriteFilter();
     });
 
+    const all = document.createElement('span');
+    all.className = 'swagger-fav-all';
+    all.textContent = 'all';
+    all.style.cursor = 'pointer';
+    all.style.marginRight = '8px';
+    all.addEventListener('click', () => {
+      const favorites = getFavoritesMap();
+      document.querySelectorAll('.opblock-summary').forEach((summary) => {
+        const routeKey = getRouteKey(summary);
+        if (routeKey) {
+          favorites[routeKey] = true;
+          markAsFavorite(summary, true);
+        }
+      });
+      saveFavoritesMap(favorites);
+      applyFavoriteFilter();
+    });
+
     const reset = document.createElement('span');
     reset.className = 'swagger-fav-reset';
     reset.textContent = 'reset';
@@ -168,6 +186,7 @@
 
     container.appendChild(filterBtn);
     container.appendChild(label);
+    container.appendChild(all);
     container.appendChild(reset);
 
     const leftMenu = document.querySelector('#swagger-floating-menu .swagger-menu-left');

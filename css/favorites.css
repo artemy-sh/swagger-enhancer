@@ -99,6 +99,7 @@
 
 .swagger-fav-label.state-0 {
   color: var(--fav-star-default);
+  margin-right: 20px;
 }
 
 .swagger-fav-label.state-1 {
@@ -110,14 +111,15 @@
 }
 
 /* ========================
-   RESET LINK
+   FAVORITES LINK
 =========================== */
 
-.swagger-fav-reset {
+.swagger-fav-reset,
+.swagger-fav-all{
   cursor: pointer;
   text-decoration: underline;
   font-size: 14px;
-  margin-left: 15px;
+  margin-left: 0;
   color: var(--fav-star-default);
   margin-top: -2px;
   opacity: .6;
@@ -125,4 +127,10 @@
 
 .swagger-fav-reset:hover {
   opacity: 1;
+  color: var(--fav-star-exclude);
+}
+
+.swagger-fav-all:hover {
+  opacity: 1;
+  color: var(--fav-star-active);
 }
