@@ -57,6 +57,6 @@
     "48": "assets/icon48.png",
     "128": "assets/icon128.png"
   },
-  "permissions": ["scripting", "tabs", "storage"],
+  "permissions": ["scripting", "storage"],
   "host_permissions": ["<all_urls>"]
 }
