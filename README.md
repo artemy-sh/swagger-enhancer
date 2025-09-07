@@ -1,30 +1,31 @@
 ### Swagger Enhancer
 
-[![Lang: RU](https://img.shields.io/badge/lang-RU-blue)](README_RU.md)
-[![JavaScript](https://img.shields.io/badge/javascript-ES6%2B-blue)](#зависимости-для-запуска)
-[![Chrome / Edge](https://img.shields.io/badge/platform-Chrome%20%7C%20Edge-blue)](#установка)
+[![Lang: EN](https://img.shields.io/badge/lang-EN-red)](README.md)
+[![JavaScript](https://img.shields.io/badge/javascript-ES6%2B-blue)](#requirements)
+[![Chrome / Edge](https://img.shields.io/badge/platform-Chrome%20%7C%20Edge-blue)](#installation)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![UI Enhancer](https://img.shields.io/badge/type-Swagger%20UI%20enhancer-orange)](#описание)
-[![Version](https://img.shields.io/badge/version-1.0.0-lightgrey)](#история-версий)
+[![UI Enhancer](https://img.shields.io/badge/type-Swagger%20UI%20enhancer-orange)](#features)
+[![Version](https://img.shields.io/badge/version-1.0.1-lightgrey)](#testing)
 
 #### Table of Contents
 
-* [Overview](#overview)
 * [Features](#features)
 * [Requirements](#requirements)
 * [Installation](#installation)
   * [Install from Chrome Web Store](#install-from-chrome-web-store)
   * [Manual Installation](#manual-installation)
 * [Quick Start](#quick-start)
+* [Architecture](#architecture)
+* [Testing](#testing)
 * [Contact](#contact)
 * [Bug Reporting](#bug-reporting)
 * [License](#license)
 
 ---
 
-**Swagger Enhancer** is a browser extension for Chromium-based browsers (Chrome, Yandex Browser, Edge, etc.) designed to extend the default functionality of the Swagger UI.
+**Swagger Enhancer** is a browser extension for Chromium-based browsers (Chrome, Edge, Yandex Browser, etc.) that improves the Swagger UI interface.
 
-It adds custom interface settings including dark mode, search bar, hiding of response blocks and schemas, scroll-to-top button, and endpoint favorites. All settings are saved automatically and applied when opening any Swagger UI page.
+Adds dark theme, endpoint search, favorites management, response/schema hiding, and scroll-to-top button. Uses Manifest V3, settings sync via `chrome.storage.sync`.
 
 ---
 
@@ -35,8 +36,8 @@ It adds custom interface settings including dark mode, search bar, hiding of res
 
   ![Demo](docs/dark_theme.gif)
 
-* **Search Bar**
-  Quickly search by tags or endpoint names.
+* **Search**
+  Search tags and endpoints with result ranking and caching.
 
   ![Demo](docs/search.gif)
 
@@ -56,26 +57,26 @@ It adds custom interface settings including dark mode, search bar, hiding of res
   Automatically collapses the `Schemas` block to keep the UI compact.
 
 * **Persistent Settings**
-  All changes are saved via `chrome.storage` and applied automatically on load.
+  Settings sync via `chrome.storage.sync` and auto-apply.
 
 ---
 
 ### Requirements
 
 * **Browser**: Chrome, Edge, Yandex Browser, or any Chromium-based browser
-* **Chromium Version**: 88+ (supports `chrome.storage.sync` and ES6+)
-* **Swagger UI**: Any page using Swagger UI (`/docs` or similar)
+* **Chromium Version**: 88+ (Manifest V3, `chrome.storage.sync`)
+* **Swagger UI**: Pages with `/docs`, `/swagger`, `/api-docs`, `/openapi` patterns
 
 ---
 
 ### Installation
 
-#### Install from Opera Addons
+#### Install from Chrome Web Store
 
-> https://addons.opera.com/ru/extensions/
+> [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Install-blue?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/swagger-enhancer/dnadagbnobcgafbdebbabcgicfkpciam)
 > 
-> Open the extension page and click **Add to Chrome**.
-> The icon will appear in the browser toolbar.
+> Visit the [Chrome Web Store page](https://chromewebstore.google.com/detail/swagger-enhancer/dnadagbnobcgafbdebbabcgicfkpciam) and click **Add to Chrome**.
+> The extension will be installed and the icon will appear in your browser toolbar.
 
 #### Manual Installation
 
@@ -92,7 +93,7 @@ It adds custom interface settings including dark mode, search bar, hiding of res
 
 3. Enable **Developer Mode** (toggle in the top-right corner).
 
-4. Click **Load unpacked** (or "Загрузить распакованное расширение").
+4. Click **Load unpacked**.
 
 5. Select the `swagger-enhancer/` folder.
 
@@ -110,6 +111,59 @@ It adds custom interface settings including dark mode, search bar, hiding of res
    `Dark Theme`, `Hide Schemas`, `Scroll to Top`, `Favorites`, etc.
 
 4. All settings are saved automatically and work on all Swagger UI tabs.
+
+---
+
+### Architecture
+
+#### **Modular Structure**
+```
+swagger-enhancer/
+├── js/utils.js              # Shared utilities and BaseFeature class
+├── js/feature_manager.js    # Centralized feature management
+├── js/main.js              # Application entry point
+├── js/theme.js             # Dark theme feature
+├── js/search.js            # Endpoint search feature
+├── js/favorites.js         # Favorites management feature
+├── js/scroll_top.js        # Scroll to top feature
+├── js/hide_responses.js    # Hide responses feature
+├── js/hide_schemas.js      # Hide schemas feature
+├── js/github_link.js       # GitHub link feature
+├── js/floating_menu.js     # Floating menu feature
+└── css/variables.css       # Centralized CSS variables
+```
+
+#### **Key Components**
+
+* **`BaseFeature`** — unified base class for all features with lifecycle management
+* **`FeatureManager`** — centralized system for registering and managing features
+* **`SwaggerEnhancerUtils`** — shared utilities for storage, DOM, and messaging
+* **CSS Variables** — centralized theming system with dark mode support
+
+### Testing
+
+#### **Testing System**
+```
+js/test_runner.js      # Test framework
+js/page_test_functions.js  # Page context functions for console access
+```
+
+#### **Test Coverage**
+
+* **Core Tests** — Extension loading and feature availability
+* **Feature Tests** — Feature toggle functionality
+* **DOM Tests** — UI elements presence
+* **CSS Tests** — Style loading verification
+* **Performance Tests** — Basic performance checks
+* **Storage Tests** — Chrome storage API functionality
+
+#### **Usage**
+```javascript
+// Run all tests (single command)
+runTests();
+```
+
+**Note:** Wait for "Swagger Enhancer: Ready" message before running tests.
 
 ---
 

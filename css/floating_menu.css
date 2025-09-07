@@ -1,35 +1,161 @@
-:root {
-  --swagger-menu-bg: rgba(255, 255, 255, 0.95);
-  --swagger-menu-text: #000;
-  --swagger-menu-shadow: rgba(0, 0, 0, 0.1);
-  --swagger-menu-blur: blur(4px);
+/**
+ * Floating menu styles for Swagger Enhancer
+ * Uses centralized CSS variables from variables.css
+ */
+
+/* ========================
+   UNIVERSAL OUTLINE RESET
+=========================== */
+#swagger-floating-menu,
+#swagger-floating-menu *,
+#swagger-floating-menu *:focus,
+#swagger-floating-menu *:focus-visible,
+#swagger-floating-menu *:focus-within {
+  outline: var(--se-no-outline);
+  outline-offset: 0 !important;
 }
 
-body{
-  padding-top: 15px !important;
+/* ========================
+   BODY PADDING ADJUSTMENT
+=========================== */
+
+body {
+  padding-top: calc(var(--se-menu-height) + var(--se-space-sm)) !important;
 }
+
+/* ========================
+   FLOATING MENU CONTAINER
+=========================== */
 
 #swagger-floating-menu {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 55px;
-  z-index: 9999;
+  height: var(--se-menu-height);
+  z-index: var(--se-z-modal);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
-  background: var(--swagger-menu-bg);
-  color: var(--swagger-menu-text);
-  box-shadow: 0 4px 12px var(--swagger-menu-shadow);
-  backdrop-filter: var(--swagger-menu-blur);
-  font-family: sans-serif;
+  padding: 0 var(--se-space-xl);
+  background: var(--se-menu-bg);
+  color: var(--se-menu-text);
+  box-shadow: var(--se-menu-shadow);
+  backdrop-filter: var(--se-menu-blur);
+  font-family: var(--se-font-family);
+  transition: all var(--se-transition-normal);
+  border-bottom: 1px solid var(--se-light-border);
 }
+
+/* Дополнительные правила для отключения outline на всех элементах меню */
+#swagger-floating-menu:focus,
+#swagger-floating-menu:focus-visible,
+#swagger-floating-menu:focus-within {
+}
+
+#swagger-floating-menu * {
+}
+
+#swagger-floating-menu *:focus,
+#swagger-floating-menu *:focus-visible,
+#swagger-floating-menu *:focus-within {
+}
+
+/* ========================
+   MENU SECTIONS
+=========================== */
 
 .swagger-menu-left,
 .swagger-menu-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--se-space-md);
+  min-height: 100%;
+}
+
+.swagger-menu-left {
+  flex: 1;
+}
+
+.swagger-menu-right {
+  flex: 0 0 auto;
+}
+
+/* ========================
+   DARK THEME OVERRIDES
+=========================== */
+
+html.swagger-dark-theme #swagger-floating-menu {
+  background: var(--se-dark-surface);
+  color: var(--se-dark-text);
+  box-shadow: var(--se-shadow-dark);
+  border-bottom-color: var(--se-dark-border);
+}
+
+/* ========================
+   RESPONSIVE DESIGN
+=========================== */
+
+@media (max-width: 768px) {
+  #swagger-floating-menu {
+    padding: 0 var(--se-space-md);
+  }
+  
+  .swagger-menu-left,
+  .swagger-menu-right {
+    gap: var(--se-space-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  #swagger-floating-menu {
+    padding: 0 var(--se-space-sm);
+    height: calc(var(--se-menu-height) - 10px);
+  }
+  
+  body {
+    padding-top: calc(var(--se-menu-height) + var(--se-space-xs)) !important;
+  }
+}
+
+/* ========================
+   ACCESSIBILITY
+=========================== */
+
+#swagger-floating-menu:focus-within {
+  outline: 2px solid var(--se-primary);
+  outline-offset: -2px;
+}
+
+/* ========================
+   ANIMATIONS
+=========================== */
+
+@keyframes menu-slide-down {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+#swagger-floating-menu {
+  animation: menu-slide-down 0.3s ease-out;
+}
+
+/* ========================
+   HIGH CONTRAST MODE
+=========================== */
+
+@media (prefers-contrast: high) {
+  #swagger-floating-menu {
+    border-bottom-width: 2px;
+  }
+  
+  html.swagger-dark-theme #swagger-floating-menu {
+    border-bottom-color: var(--se-dark-text);
+  }
 }

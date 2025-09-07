@@ -1,21 +1,18 @@
-:root {
-  --search-bg: #fff;
-  --search-color: #000;
-  --search-border: #ccc;
-  --search-placeholder: #666;
-  --search-hover-bg: #f0f0f0;
-  --search-item-color: #333;
-  --route-tag-color: #222;
-  --route-path-color: #007acc;
-  --route-desc-color: #666;
+/**
+ * Search functionality styles for Swagger Enhancer
+ * Uses centralized CSS variables from variables.css
+ */
 
-  --method-get: #61affe;
-  --method-post: #00b261;
-  --method-put: #e6a318;
-  --method-delete: #f93e3e;
-  --method-patch: #0fbcae;
-  --method-options: #0d5aa7;
-  --method-head: #8c43cd;
+/* ========================
+   UNIVERSAL OUTLINE RESET
+=========================== */
+#swagger-search-container,
+#swagger-search-container *,
+#swagger-search-container *:focus,
+#swagger-search-container *:focus-visible,
+#swagger-search-container *:focus-within {
+  outline: var(--se-no-outline);
+  outline-offset: 0 !important;
 }
 
 /* ========================
@@ -24,15 +21,14 @@
 
 #swagger-search-container {
   position: relative;
-  z-index: 9999;
-  width: 450px;
-  font-family: sans-serif;
+  z-index: var(--se-z-tooltip);
+  width: var(--se-search-width);
+  font-family: var(--se-font-family);
   display: flex;
   align-items: stretch;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--se-space-xs);
 }
-
 
 /* ========================
    SEARCH INPUT
@@ -40,12 +36,87 @@
 
 #swagger-search-container input[type="search"] {
   width: 100%;
-  padding: 10px;
+  padding: var(--se-space-sm) var(--se-space-md);
   font-size: 14px;
-  border-radius: 6px;
-  border: 1px solid var(--search-border);
-  background-color: var(--search-bg);
-  color: var(--search-color);
+  border-radius: var(--se-radius-md);
+  border: 1px solid var(--se-light-border);
+  background-color: var(--se-light-bg);
+  color: var(--se-light-text);
+  transition: border-color var(--se-transition-fast),
+              box-shadow var(--se-transition-fast);
+}
+
+#swagger-search-container input[type="search"]:focus {
+  outline-offset: 0 !important;
+  border-color: var(--se-primary);
+  box-shadow: 0 0 0 2px rgba(73, 144, 226, 0.2) !important;
+}
+
+#swagger-search-container input[type="search"]:focus-visible {
+  outline-offset: 0 !important;
+}
+
+#swagger-search-container input[type="search"]:focus-within {
+  outline-offset: 0 !important;
+}
+
+#swagger-search-container input[type="search"]:active {
+  outline-offset: 0 !important;
+}
+
+#swagger-search-container input[type="search"] {
+  outline-offset: 0 !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Дополнительные правила для переопределения браузерных стилей */
+#swagger-search-container input[type="search"]::-webkit-search-decoration,
+#swagger-search-container input[type="search"]::-webkit-search-cancel-button,
+#swagger-search-container input[type="search"]::-webkit-search-results-button,
+#swagger-search-container input[type="search"]::-webkit-search-results-decoration {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Максимально специфичные правила для переопределения outline */
+html #swagger-search-container input[type="search"]:focus,
+body #swagger-search-container input[type="search"]:focus,
+#swagger-ui #swagger-search-container input[type="search"]:focus {
+  outline-offset: 0 !important;
+  box-shadow: 0 0 0 2px rgba(73, 144, 226, 0.2) !important;
+}
+
+/* Универсальное правило для всех input элементов */
+input[type="search"]:focus {
+  outline-offset: 0 !important;
+}
+
+/* Дополнительное правило для focus-visible состояния */
+#swagger-search-container input[type="search"]:focus-visible {
+  outline-offset: 0 !important;
+  -webkit-focus-ring-color: transparent !important;
+}
+
+/* Максимально агрессивное правило для переопределения user agent stylesheet */
+html #swagger-search-container input[type="search"]:focus-visible,
+body #swagger-search-container input[type="search"]:focus-visible,
+#swagger-ui #swagger-search-container input[type="search"]:focus-visible {
+  outline-offset: 0 !important;
+  -webkit-focus-ring-color: transparent !important;
+}
+
+/* Ультра-агрессивное правило для полного переопределения */
+* #swagger-search-container input[type="search"]:focus-visible {
+  outline-offset: 0 !important;
+  -webkit-focus-ring-color: transparent !important;
+  box-shadow: 0 0 0 2px rgba(73, 144, 226, 0.2) !important;
+}
+
+#swagger-search-container input[type="search"]::placeholder {
+  color: var(--se-light-text);
+  opacity: 0.6;
 }
 
 /* ========================
@@ -57,17 +128,17 @@
   top: 100%;
   left: 0;
   width: 100%;
-  z-index: 10000;
+  z-index: var(--se-z-tooltip);
   display: none;
   list-style: none;
   margin: 0;
   padding: 0;
   max-height: 450px;
   overflow-y: auto;
-  background: var(--search-bg);
-  border: 1px solid var(--search-border);
-  border-radius: 4px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  background: var(--se-light-bg);
+  border: 1px solid var(--se-light-border);
+  border-radius: var(--se-radius-sm);
+  box-shadow: var(--se-shadow-lg);
 }
 
 /* ========================
@@ -75,14 +146,24 @@
 =========================== */
 
 #swagger-search-container li {
-  padding: 10px 13px;
+  padding: var(--se-space-sm) var(--se-space-md);
   cursor: pointer;
-  border-bottom: 1px solid #eee;
-  color: var(--search-item-color);
+  border-bottom: 1px solid var(--se-light-border);
+  color: var(--se-light-text);
+  transition: background-color var(--se-transition-fast);
+}
+
+#swagger-search-container li:last-child {
+  border-bottom: none;
 }
 
 #swagger-search-container li:hover {
-  background-color: var(--search-hover-bg);
+  background-color: var(--se-light-hover);
+}
+
+#swagger-search-container li:focus {
+  outline: 2px solid var(--se-primary);
+  outline-offset: -2px;
 }
 
 /* ========================
@@ -91,46 +172,158 @@
 
 #swagger-search-container li span.route-tag {
   font-size: 16px;
-  font-weight: bold;
-  color: var(--route-tag-color);
+  font-weight: 600;
+  color: var(--se-light-text);
+  display: block;
+  margin-bottom: var(--se-space-xs);
 }
 
 #swagger-search-container li span.route-method {
   display: inline-block;
   font-size: 12px;
-  font-weight: bold;
-  padding: 2px 7px;
-  border-radius: 3px;
-  margin-right: 6px;
-  color: #fff;
+  font-weight: 600;
+  padding: var(--se-space-xs) var(--se-space-sm);
+  border-radius: var(--se-radius-sm);
+  margin-right: var(--se-space-sm);
+  color: var(--se-white);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 #swagger-search-container li span.route-path {
   display: inline-flex;
   font-size: 13px;
-  color: var(--route-path-color);
+  color: var(--se-primary);
   max-width: 370px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-family: var(--se-font-family);
 }
 
 #swagger-search-container li div.route-desc {
   font-size: 12px;
-  color: var(--route-desc-color);
-  padding-top: 3px;
+  color: var(--se-light-text);
+  opacity: 0.8;
+  padding-top: var(--se-space-xs);
   max-width: 430px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.4;
 }
 
 /* ========================
    METHOD COLORS
 =========================== */
 
-.route-method[data-method="GET"]    { background: var(--method-get); }
-.route-method[data-method="POST"]   { background: var(--method-post); }
-.route-method[data-method="PUT"]    { background: var(--method-put); }
-.route-method[data-method="DELETE"] { background: var(--method-delete); }
-.route-method[data-method="PATCH"]  { background: var(--method-patch); }
+.route-method[data-method="GET"] {
+  background: var(--se-method-get);
+}
+
+.route-method[data-method="POST"] {
+  background: var(--se-method-post);
+}
+
+.route-method[data-method="PUT"] {
+  background: var(--se-method-put);
+}
+
+.route-method[data-method="DELETE"] {
+  background: var(--se-method-delete);
+}
+
+.route-method[data-method="PATCH"] {
+  background: var(--se-method-patch);
+}
+
+.route-method[data-method="OPTIONS"] {
+  background: var(--se-method-options);
+}
+
+.route-method[data-method="HEAD"] {
+  background: var(--se-method-head);
+}
+
+/* ========================
+   DARK THEME OVERRIDES
+=========================== */
+
+html.swagger-dark-theme #swagger-search-container input[type="search"] {
+  background-color: var(--se-dark-input-bg);
+  color: var(--se-dark-text);
+  border-color: var(--se-dark-input-border);
+}
+
+html.swagger-dark-theme #swagger-search-container input[type="search"]:focus {
+  border-color: var(--se-primary);
+  box-shadow: 0 0 0 2px rgba(73, 144, 226, 0.3);
+}
+
+html.swagger-dark-theme #swagger-search-container input[type="search"]::placeholder {
+  color: var(--se-dark-text);
+  opacity: 0.6;
+}
+
+html.swagger-dark-theme #swagger-search-container ul {
+  background: var(--se-dark-surface);
+  border-color: var(--se-dark-border);
+}
+
+html.swagger-dark-theme #swagger-search-container li {
+  color: var(--se-dark-text);
+  border-bottom-color: var(--se-dark-border);
+}
+
+html.swagger-dark-theme #swagger-search-container li:hover {
+  background-color: var(--se-dark-surface-alt);
+}
+
+html.swagger-dark-theme #swagger-search-container li span.route-tag {
+  color: var(--se-dark-text);
+}
+
+html.swagger-dark-theme #swagger-search-container li span.route-path {
+  color: var(--se-primary);
+}
+
+html.swagger-dark-theme #swagger-search-container li div.route-desc {
+  color: var(--se-dark-text-light);
+}
+
+/* ========================
+   RESPONSIVE DESIGN
+=========================== */
+
+@media (max-width: 768px) {
+  #swagger-search-container {
+    width: 100%;
+    max-width: 350px;
+  }
+  
+  #swagger-search-container li span.route-path {
+    max-width: 250px;
+  }
+  
+  #swagger-search-container li div.route-desc {
+    max-width: 300px;
+  }
+}
+
+/* ========================
+   ACCESSIBILITY
+=========================== */
+
+#swagger-search-container li[aria-selected="true"] {
+  background-color: var(--se-primary);
+  color: var(--se-white);
+}
+
+#swagger-search-container li[aria-selected="true"] span.route-path {
+  color: var(--se-white);
+}
+
+#swagger-search-container li[aria-selected="true"] div.route-desc {
+  color: var(--se-white);
+  opacity: 0.9;
+}
