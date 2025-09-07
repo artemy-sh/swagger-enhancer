@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Swagger Enhancer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Enhances the Swagger UI experience with visual and usability improvements.",
+  "author": "Artemy Shalygin",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -17,8 +18,12 @@
   },
   "content_scripts": [
     {
-      "matches": ["*://*/*docs*"],
+      "matches": [
+        "*://*/*docs*"
+      ],
       "js": [
+        "js/utils.js",
+        "js/feature_manager.js",
         "js/floating_menu.js",
         "js/theme.js",
         "js/search.js",
@@ -26,9 +31,12 @@
         "js/scroll_top.js",
         "js/hide_responses.js",
         "js/hide_schemas.js",
-        "js/github_link.js"
+        "js/github_link.js",
+        "js/main.js",
+        "js/test_runner.js"
       ],
       "css": [
+        "css/variables.css",
         "css/floating_menu.css",
         "css/search.css",
         "css/favorites.css",
@@ -41,12 +49,8 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "css/floating_menu.css",
-        "css/search.css",
-        "css/favorites.css",
-        "css/dark.css",
-        "css/scroll_top.css",
-        "css/github_link.css"
+        "css/*.css",
+        "js/page_test_functions.js"
       ],
       "matches": ["<all_urls>"]
     }
@@ -57,6 +61,9 @@
     "48": "assets/icon48.png",
     "128": "assets/icon128.png"
   },
-  "permissions": ["scripting", "storage"],
-  "host_permissions": ["<all_urls>"]
+  "permissions": ["storage"],
+  "host_permissions": ["<all_urls>"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
 }

@@ -4,27 +4,28 @@
 [![JavaScript](https://img.shields.io/badge/javascript-ES6%2B-blue)](#требования)
 [![Chrome / Edge](https://img.shields.io/badge/platform-Chrome%20%7C%20Edge%20%7C%20Yandex-blue)](#установка)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![UI Enhancer](https://img.shields.io/badge/type-Swagger%20UI%20enhancer-orange)](#описание)
-[![Version](https://img.shields.io/badge/version-1.0.0-lightgrey)](#история-версий)
+[![UI Enhancer](https://img.shields.io/badge/type-Swagger%20UI%20enhancer-orange)](#возможности)
+[![Version](https://img.shields.io/badge/version-1.0.1-lightgrey)](#тестирование)
 
 #### Содержание
 
-* [Описание](#описание)
 * [Возможности](#возможности)
 * [Требования](#требования)
 * [Установка](#установка)
   * [Установка из Chrome Web Store](#установка-из-chrome-web-store)
   * [Ручная установка](#ручная-установка)
 * [Быстрый старт](#быстрый-старт)
+* [Архитектура](#архитектура)
+* [Тестирование](#тестирование)
 * [Контакты](#контакты)
 * [Отчёт об ошибках](#отчёт-об-ошибках)
 * [Лицензия](#лицензия)
 
 ---
 
-**Swagger Enhancer** — расширение для браузеров на движке Chromium (Chrome, Яндекс.Браузер и др.), предназначенное для расширения возможностей стандартного интерфейса Swagger UI.
+**Swagger Enhancer** — расширение для браузеров на движке Chromium (Chrome, Edge, Яндекс.Браузер и др.) для улучшения интерфейса Swagger UI.
 
-Добавляет пользовательские настройки интерфейса, включая поддержку тёмной темы, строку поиска, скрытие блоков ответов и схем, кнопку прокрутки вверх и избранные эндпоинты. Все настройки сохраняются автоматически и применяются при открытии страниц с Swagger UI.
+Добавляет тёмную тему, поиск по эндпоинтам, управление избранными, скрытие блоков ответов и схем, кнопку прокрутки вверх. Использует Manifest V3, настройки синхронизируются через `chrome.storage.sync`.
 
 ---
 
@@ -35,8 +36,8 @@
 
   ![Demo](docs/dark_theme.gif)
 
-* **Строка поиска**
-  Быстрый поиск по тегам и названиям эндпоинтов.
+* **Поиск**
+  Поиск по тегам и эндпоинтам с ранжированием результатов и кэшированием.
 
   ![Demo](docs/search.gif)
 
@@ -56,26 +57,26 @@
   Автоматически скрывает блок `Schemas`, делая страницу компактнее.
 
 * **Сохранение настроек**
-  Все изменения сохраняются в `chrome.storage` и применяются автоматически.
+  Настройки синхронизируются через `chrome.storage.sync` и применяются автоматически.
 
 ---
 
 #### Требования
 
 * **Браузер**: Chrome, Edge, Яндекс.Браузер и другие Chromium-браузеры
-* **Версия Chromium**: 88+ (поддержка `chrome.storage.sync`, ES6+)
-* **Swagger UI**: Любая страница с Swagger UI (`/docs`)
+* **Версия Chromium**: 88+ (Manifest V3, `chrome.storage.sync`)
+* **Swagger UI**: Страницы с паттернами `/docs`, `/swagger`, `/api-docs`, `/openapi`
 
 ---
 
 ### Установка
 
-#### Установка из Opera Addons
+#### Установка из Chrome Web Store
 
-> https://addons.opera.com/ru/extensions/
+> [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Установить-blue?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/swagger-enhancer/dnadagbnobcgafbdebbabcgicfkpciam)
 > 
-> Откройте страницу расширения и нажмите **Add to Browser**.
-> Иконка появится в панели браузера.
+> Перейдите на [страницу Chrome Web Store](https://chromewebstore.google.com/detail/swagger-enhancer/dnadagbnobcgafbdebbabcgicfkpciam) и нажмите **Добавить в Chrome**.
+> Расширение будет установлено, и иконка появится в панели браузера.
 
 #### Ручная установка
 
@@ -110,6 +111,59 @@
    `Dark Theme`, `Hide Schemas`, `Scroll to Top`, `Favorites` и др.
 
 4. Настройки сохраняются автоматически и работают на всех вкладках Swagger UI.
+
+---
+
+### Архитектура
+
+#### **Модульная структура**
+```
+swagger-enhancer/
+├── js/utils.js              # Общие утилиты и класс BaseFeature
+├── js/feature_manager.js    # Централизованное управление фичами
+├── js/main.js              # Точка входа приложения
+├── js/theme.js             # Фича тёмной темы
+├── js/search.js            # Фича поиска по эндпоинтам
+├── js/favorites.js         # Фича управления избранными
+├── js/scroll_top.js        # Фича прокрутки наверх
+├── js/hide_responses.js    # Фича скрытия ответов
+├── js/hide_schemas.js      # Фича скрытия схем
+├── js/github_link.js       # Фича ссылки на GitHub
+├── js/floating_menu.js     # Фича плавающего меню
+└── css/variables.css       # Централизованные CSS переменные
+```
+
+#### **Ключевые компоненты**
+
+* **`BaseFeature`** — унифицированный базовый класс для всех фич с управлением жизненным циклом
+* **`FeatureManager`** — централизованная система регистрации и управления фичами
+* **`SwaggerEnhancerUtils`** — общие утилиты для storage, DOM и messaging
+* **CSS Variables** — централизованная система темизации с поддержкой тёмного режима
+
+### Тестирование
+
+#### **Система тестирования**
+```
+js/test_runner.js      # Фреймворк тестирования
+js/page_test_functions.js  # Функции контекста страницы для доступа из консоли
+```
+
+#### **Покрытие тестами**
+
+* **Основные тесты** — Загрузка расширения и доступность фич
+* **Тесты фич** — Функциональность переключения фич
+* **DOM тесты** — Наличие UI элементов
+* **CSS тесты** — Проверка загрузки стилей
+* **Тесты производительности** — Базовые проверки производительности
+* **Тесты хранилища** — Функциональность Chrome storage API
+
+#### **Использование**
+```javascript
+// Запустить все тесты (одна команда)
+runTests();
+```
+
+**Примечание:** Дождитесь сообщения "Swagger Enhancer: Ready" перед запуском тестов.
 
 ---
 

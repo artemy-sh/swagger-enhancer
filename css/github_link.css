@@ -1,20 +1,135 @@
+/**
+ * GitHub link styles for Swagger Enhancer
+ * Uses centralized CSS variables from variables.css
+ */
+
+/* ========================
+   GITHUB LINK
+=========================== */
+
 #swagger-github-link {
-  margin-left: 12px;
+  margin-left: var(--se-space-md);
   font-size: 13px;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  color: #555;
+  color: var(--se-light-text);
   opacity: 0.5;
-  transition: opacity 0.2s ease;
+  transition: all var(--se-transition-fast);
+  padding: var(--se-space-xs) var(--se-space-sm);
+  border-radius: var(--se-radius-sm);
+  font-family: var(--se-font-family);
+  font-weight: 500;
 }
 
 #swagger-github-link:hover {
   opacity: 1;
-  color: black;
+  color: var(--se-light-text);
+  background-color: var(--se-light-hover);
+  transform: translateY(-1px);
 }
+
+#swagger-github-link:focus {
+  outline: 2px solid var(--se-primary);
+  outline-offset: 2px;
+  opacity: 1;
+}
+
+/* ========================
+   GITHUB ICON
+=========================== */
 
 #swagger-github-link svg {
   fill: currentColor;
-  margin-right: 4px;
+  margin-right: var(--se-space-xs);
+  width: 16px;
+  height: 16px;
+  transition: transform var(--se-transition-fast);
+}
+
+#swagger-github-link:hover svg {
+  transform: scale(1.1);
+}
+
+/* ========================
+   DARK THEME OVERRIDES
+=========================== */
+
+html.swagger-dark-theme #swagger-github-link {
+  color: var(--se-dark-text);
+  opacity: 0.3;
+}
+
+html.swagger-dark-theme #swagger-github-link:hover {
+  color: var(--se-dark-text);
+  background-color: var(--se-dark-surface-alt);
+  opacity: 1;
+}
+
+/* ========================
+   RESPONSIVE DESIGN
+=========================== */
+
+@media (max-width: 768px) {
+  #swagger-github-link {
+    margin-left: var(--se-space-sm);
+    font-size: 12px;
+    padding: var(--se-space-xs);
+  }
+  
+  #swagger-github-link svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  #swagger-github-link {
+    margin-left: var(--se-space-xs);
+    font-size: 11px;
+  }
+  
+  #swagger-github-link svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+/* ========================
+   ACCESSIBILITY
+=========================== */
+
+@media (prefers-reduced-motion: reduce) {
+  #swagger-github-link {
+    transition: opacity var(--se-transition-fast);
+  }
+  
+  #swagger-github-link:hover {
+    transform: none;
+  }
+  
+  #swagger-github-link svg {
+    transition: none;
+  }
+  
+  #swagger-github-link:hover svg {
+    transform: none;
+  }
+}
+
+/* ========================
+   HIGH CONTRAST MODE
+=========================== */
+
+@media (prefers-contrast: high) {
+  #swagger-github-link {
+    opacity: 0.8;
+    border: 1px solid currentColor;
+  }
+  
+  #swagger-github-link:hover {
+    opacity: 1;
+    background-color: currentColor;
+    color: var(--se-white);
+  }
 }

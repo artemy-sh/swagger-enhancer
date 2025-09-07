@@ -1,142 +1,135 @@
 /* ========================
-   COLOR VARIABLES
+   DARK THEME STYLES
+   Uses centralized CSS variables from variables.css
+   Only applies when .swagger-dark-theme class is present
 =========================== */
-:root {
-  --bg-color: #121212;
-  --text-color: #e0e0e0;
-  --text-light: #cdcdcd;
-  --surface-color: #1e1e1e;
-  --surface-alt: #1f1f1f;
-  --border-color: #333;
-  --input-bg: #2b2b2b;
-  --input-border: #555;
-  --btn-bg: #333;
-  --btn-hover-bg: #444;
 
-  /* Method Colors */
-  --method-get: #61affe;
-  --method-post: #00b261;
-  --method-put: #e6a318;
-  --method-delete: #f93e3e;
-  --method-patch: #0fbcae;
-  --method-options: #0d5aa7;
-  --method-head: #8c43cd;
-
-  --type-color: #90caf9;
-  --link-color: #dddddd;
-  --path-color: #4ea1f7;
-  --lock-color: #49cc90
+/* ========================
+   UNIVERSAL OUTLINE RESET
+=========================== */
+.swagger-dark-theme #swagger-search-container,
+.swagger-dark-theme #swagger-search-container *,
+.swagger-dark-theme #swagger-search-container *:focus,
+.swagger-dark-theme #swagger-search-container *:focus-visible,
+.swagger-dark-theme #swagger-search-container *:focus-within,
+.swagger-dark-theme #swagger-floating-menu,
+.swagger-dark-theme #swagger-floating-menu *,
+.swagger-dark-theme #swagger-floating-menu *:focus,
+.swagger-dark-theme #swagger-floating-menu *:focus-visible,
+.swagger-dark-theme #swagger-floating-menu *:focus-within {
+  outline: var(--se-no-outline);
+  outline-offset: 0 !important;
 }
 
 /* ========================
    GLOBAL BACKGROUND & TEXT
 =========================== */
-html,
-body,
-.swagger-ui,
-.swagger-container {
-  background-color: var(--bg-color) !important;
-  color: var(--text-color) !important;
+.swagger-dark-theme html,
+.swagger-dark-theme body,
+.swagger-dark-theme .swagger-ui,
+.swagger-dark-theme .swagger-container {
+  background-color: var(--se-dark-bg) !important;
+  color: var(--se-dark-text) !important;
 }
 
 /* ========================
    TOPBAR
 =========================== */
-.topbar {
-  background-color: var(--surface-alt) !important;
-  border-bottom: 1px solid var(--border-color) !important;
+.swagger-dark-theme .topbar {
+  background-color: var(--se-dark-surface-alt) !important;
+  border-bottom: 1px solid var(--se-dark-border) !important;
 }
 
 /* ========================
    HEADERS & TITLES
 =========================== */
-.swagger-ui .info,
-.swagger-ui .info p,
-.swagger-ui .markdown,
-.swagger-ui .info__title,
-.swagger-ui .info__version {
-  color: var(--text-color) !important;
+.swagger-dark-theme .swagger-ui .info,
+.swagger-dark-theme .swagger-ui .info p,
+.swagger-dark-theme .swagger-ui .markdown,
+.swagger-dark-theme .swagger-ui .info__title,
+.swagger-dark-theme .swagger-ui .info__version {
+  color: var(--se-dark-text) !important;
 }
 
-.swagger-ui .info .title {
+.swagger-dark-theme .swagger-ui .info .title {
   color: #f4f4f4 !important;
 }
 
-.swagger-ui .tab li button.tablinks {
-  color: var(--text-color) !important;
+.swagger-dark-theme .swagger-ui .tab li button.tablinks {
+  color: var(--se-dark-text) !important;
 }
 
 /* ========================
    ANCHORS & LINKS
 =========================== */
-.swagger-ui a,
-.swagger-ui a:visited,
-.swagger-ui a.nostyle,
-.swagger-ui a.nostyle:visited {
-  color: var(--link-color) !important;
+.swagger-dark-theme .swagger-ui a,
+.swagger-dark-theme .swagger-ui a:visited,
+.swagger-dark-theme .swagger-ui a.nostyle,
+.swagger-dark-theme .swagger-ui a.nostyle:visited {
+  color: var(--se-dark-text-light) !important;
 }
 
 /* ========================
    OPBLOCK / TAG SECTIONS
 =========================== */
-.opblock,
-.opblock-tag-section,
-.opblock-section-header,
-.opblock-summary,
-.opblock-description-wrapper p,
-.markdown p,
-.opblock-tag {
-  background-color: var(--surface-color) !important;
-  color: var(--text-color) !important;
-  border-color: var(--border-color) !important;
+.swagger-dark-theme .opblock,
+.swagger-dark-theme .opblock-tag-section,
+.swagger-dark-theme .opblock-section-header,
+.swagger-dark-theme .opblock-summary,
+.swagger-dark-theme .opblock-description-wrapper p,
+.swagger-dark-theme .markdown p,
+.swagger-dark-theme .opblock-tag {
+  background-color: var(--se-dark-surface) !important;
+  color: var(--se-dark-text) !important;
+  border-color: var(--se-dark-border) !important;
 }
 
-.swagger-ui .opblock .opblock-section-header {
-  background-color: var(--surface-alt) !important;
+.swagger-dark-theme .swagger-ui .opblock .opblock-section-header {
+  background-color: var(--se-dark-surface-alt) !important;
 }
 
-.swagger-ui .opblock .opblock-summary-description {
+.swagger-dark-theme .swagger-ui .opblock .opblock-summary-description {
   color: #b0bec5 !important;
 }
 
-.opblock.opblock-get .opblock-summary-method {
-  background-color: var(--method-get) !important;
-  color: var(--text-color) !important;
+.swagger-dark-theme .opblock.opblock-get .opblock-summary-method {
+  background-color: var(--se-method-get) !important;
+  color: var(--se-dark-text) !important;
 }
 
-.opblock.opblock-post .opblock-summary-method {
-  background-color: var(--method-post) !important;
-  color: var(--text-color) !important;
+.swagger-dark-theme .opblock.opblock-post .opblock-summary-method {
+  background-color: var(--se-method-post) !important;
+  color: var(--se-dark-text) !important;
 }
 
-.opblock.opblock-put .opblock-summary-method {
-  background-color: var(--method-put) !important;
-  color: var(--text-color) !important;
+.swagger-dark-theme .opblock.opblock-put .opblock-summary-method {
+  background-color: var(--se-method-put) !important;
+  color: var(--se-dark-text) !important;
 }
 
-.opblock.opblock-delete .opblock-summary-method {
-  background-color: var(--method-delete) !important;
-  color: var(--text-color) !important;
+.swagger-dark-theme .opblock.opblock-delete .opblock-summary-method {
+  background-color: var(--se-method-delete) !important;
+  color: var(--se-dark-text) !important;
 }
 
-.opblock.opblock-patch .opblock-summary-method {
-  background-color: var(--method-patch) !important;
-  color: var(--text-color) !important;
+.swagger-dark-theme .opblock.opblock-patch .opblock-summary-method {
+  background-color: var(--se-method-patch) !important;
+  color: var(--se-dark-text) !important;
 }
 
-.opblock.opblock-options .opblock-summary-method {
-  background-color: var(--method-options) !important;
-  color: var(--text-color) !important;
+.swagger-dark-theme .opblock.opblock-options .opblock-summary-method {
+  background-color: var(--se-method-options) !important;
+  color: var(--se-dark-text) !important;
 }
 
-.opblock.opblock-head .opblock-summary-method {
-  background-color: var(--method-head) !important;
-  color: var(--text-color) !important;
+.swagger-dark-theme .opblock.opblock-head .opblock-summary-method {
+  background-color: var(--se-method-head) !important;
+  color: var(--se-dark-text) !important;
 }
 
 .opblock-section-header h4,
-.opblock-section-header label {
-  color: var(--text-color) !important;
+.swagger-dark-theme .opblock-section-header label {
+  color: var(--se-dark-text) !important;
 }
 
 /* ========================
@@ -147,27 +140,27 @@ body,
 .request-body,
 .response-col_description__inner,
 .model-example,
-table,
-th,
-td,
+.swagger-dark-theme table,
+.swagger-dark-theme th,
+.swagger-dark-theme td,
 .responses-table,
-.swagger-ui .json-schema-2020-12-accordion {
+.swagger-dark-theme .swagger-ui .json-schema-2020-12-accordion {
   background: none !important;
-  color: var(--text-color) !important;
-  border-color: var(--border-color) !important;
+  color: var(--se-dark-text) !important;
+  border-color: var(--se-dark-border) !important;
 }
 
-.response-col_status {
-  background-color: var(--surface-color) !important;
-  color: var(--text-color) !important;
+.swagger-dark-theme .response-col_status {
+  background-color: var(--se-dark-surface) !important;
+  color: var(--se-dark-text) !important;
 }
 
-input,
-textarea,
-select {
-  background-color: var(--input-bg) !important;
-  color: var(--text-color) !important;
-  border: 1px solid var(--input-border) !important;
+.swagger-dark-theme input,
+.swagger-dark-theme textarea,
+.swagger-dark-theme select {
+  background-color: var(--se-dark-input-bg) !important;
+  color: var(--se-dark-text) !important;
+  border: 1px solid var(--se-dark-input-border) !important;
 }
 
 /* ========================
@@ -177,23 +170,23 @@ select {
 .try-out__btn,
 .execute-wrapper .btn,
 .cancel,
-.swagger-ui .collapse-button,
-.swagger-ui .collapse-button span {
-  background-color: var(--btn-bg) !important;
-  color: var(--text-color) !important;
-  border: 1px solid var(--input-border) !important;
+.swagger-dark-theme .swagger-ui .collapse-button,
+.swagger-dark-theme .swagger-ui .collapse-button span {
+  background-color: var(--se-dark-btn-bg) !important;
+  color: var(--se-dark-text) !important;
+  border: 1px solid var(--se-dark-input-border) !important;
 }
 
 .btn:hover,
 .try-out__btn:hover,
 .execute-wrapper .btn:hover,
 .cancel:hover,
-.swagger-ui .collapse-button:hover,
-.swagger-ui .collapse-button span:hover {
-  background-color: var(--btn-hover-bg) !important;
+.swagger-dark-theme .swagger-ui .collapse-button:hover,
+.swagger-dark-theme .swagger-ui .collapse-button span:hover {
+  background-color: var(--se-dark-btn-hover) !important;
 }
 
-.swagger-ui .btn.execute {
+.swagger-dark-theme .swagger-ui .btn.execute {
   background-color: #4990e2 !important;
   color: #ffffff !important;
 }
@@ -201,10 +194,9 @@ select {
 /* ========================
    REMOVE FOCUS OUTLINE
 =========================== */
-.swagger-ui .model-box-control:focus,
-.swagger-ui .models-control:focus,
-.swagger-ui .opblock-summary-control:focus {
-  outline: none !important;
+.swagger-dark-theme .swagger-ui .model-box-control:focus,
+.swagger-dark-theme .swagger-ui .models-control:focus,
+.swagger-dark-theme .swagger-ui .opblock-summary-control:focus {
 }
 
 /* ========================
@@ -214,137 +206,205 @@ select {
 .model-title span,
 .model-box,
 .model-box-control,
-.model-container {
-  background-color: var(--surface-color) !important;
+.swagger-dark-theme .model-container {
+  background-color: var(--se-dark-surface) !important;
   color: #ffffff !important;
-  border: 1px solid var(--border-color) !important;
+  border: 1px solid var(--se-dark-border) !important;
 }
 
 .property-type,
 .prop-format,
 .prop-enum,
 .prop-default,
-.model {
-  color: var(--type-color) !important;
+.swagger-dark-theme .model {
+  color: var(--se-info) !important;
 }
 
 .array-item-type,
-.array-item-type span {
-  color: var(--text-color) !important;
+.swagger-dark-theme .array-item-type span {
+  color: var(--se-dark-text) !important;
 }
 
 .arrow,
-.arrow span {
+.swagger-dark-theme .arrow span {
   filter: invert(80%);
 }
 
-.swagger-ui .json-schema-2020-12-expand-deep-button {
+.swagger-dark-theme .swagger-ui .json-schema-2020-12-expand-deep-button {
   background: none !important;
-  color: var(--text-color) !important;
+  color: var(--se-dark-text) !important;
 }
 
-.swagger-ui .json-schema-2020-12-accordion__icon svg,
-.swagger-ui .json-schema-2020-12-accordion__icon--expanded svg {
-  fill: var(--text-color) !important;
-  stroke: var(--text-color) !important;
-  color: var(--text-color) !important;
+.swagger-dark-theme .swagger-ui .json-schema-2020-12-accordion__icon svg,
+.swagger-dark-theme .swagger-ui .json-schema-2020-12-accordion__icon--expanded svg {
+  fill: var(--se-dark-text) !important;
+  stroke: var(--se-dark-text) !important;
+  color: var(--se-dark-text) !important;
   filter: none !important;
 }
 
 /* ========================
    AUTHORIZATION ICONS
 =========================== */
-.swagger-ui .authorization__btn .unlocked {
-  fill: var(--text-color) !important;
-  stroke: var(--text-color) !important;
-  color: var(--text-color) !important;
+.swagger-dark-theme .swagger-ui .authorization__btn .unlocked {
+  fill: var(--se-dark-text) !important;
+  stroke: var(--se-dark-text) !important;
+  color: var(--se-dark-text) !important;
   filter: none !important;
 }
 
-.swagger-ui .authorization__btn .locked {
-  fill: var(--lock-color) !important;
-  stroke: var(--lock-color) !important;
-  color: var(--lock-color) !important;
+.swagger-dark-theme .swagger-ui .authorization__btn .locked {
+  fill: var(--se-success) !important;
+  stroke: var(--se-success) !important;
+  color: var(--se-success) !important;
   filter: none !important;
 }
 
 /* ========================
    RESPONSE HEADINGS
 =========================== */
-.swagger-ui .responses-inner h4,
-.swagger-ui .responses-inner h5 {
-  color: var(--text-color) !important;
+.swagger-dark-theme .swagger-ui .responses-inner h4,
+.swagger-dark-theme .swagger-ui .responses-inner h5 {
+  color: var(--se-dark-text) !important;
 }
 
 /* ========================
    SCHEME SELECTOR
 =========================== */
-.swagger-ui .scheme-container {
+.swagger-dark-theme .swagger-ui .scheme-container {
   background: none !important;
 }
 
 /* ========================
    DIALOGS / MODALS
 =========================== */
-.swagger-ui .dialog-ux .modal-ux {
+.swagger-dark-theme .swagger-ui .dialog-ux .modal-ux {
   background: #000 !important;
   border: 1px solid #2d2d2d !important;
   box-shadow: none !important;
 }
 
-.swagger-ui .dialog-ux .modal-ux-header {
+.swagger-dark-theme .swagger-ui .dialog-ux .modal-ux-header {
   border-bottom: 1px solid #2d2d2d !important;
 }
 
-.swagger-ui .dialog-ux .modal-ux-content p {
-  color: var(--text-light) !important;
+.swagger-dark-theme .swagger-ui .dialog-ux .modal-ux-content p {
+  color: var(--se-dark-text-light) !important;
 }
 
-.swagger-ui .dialog-ux .modal-ux-content h4,
-.swagger-ui .dialog-ux .modal-ux-header h3 {
-  color: var(--text-light) !important;
+.swagger-dark-theme .swagger-ui .dialog-ux .modal-ux-content h4,
+.swagger-dark-theme .swagger-ui .dialog-ux .modal-ux-header h3 {
+  color: var(--se-dark-text-light) !important;
 }
 
-.swagger-ui label {
-  color: var(--text-light) !important;
+.swagger-dark-theme .swagger-ui label {
+  color: var(--se-dark-text-light) !important;
 }
 
 /* ========================
    SEARCH EXTENSION
 =========================== */
-#swagger-search-container input[type="search"] {
-  background-color: var(--input-bg);
-  color: var(--text-color);
-  border: 1px solid var(--input-border);
+.swagger-dark-theme #swagger-search-container input[type="search"] {
+  background-color: var(--se-dark-input-bg);
+  color: var(--se-dark-text);
+  border: 1px solid var(--se-dark-input-border);
 }
 
-#swagger-search-container ul {
-  background: var(--surface-color);
-  border: 1px solid #444;
+.swagger-dark-theme #swagger-search-container input[type="search"]:focus {
+  outline-offset: 0 !important;
+  border-color: var(--se-primary);
+  box-shadow: 0 0 0 2px rgba(73, 144, 226, 0.2) !important;
 }
 
-#swagger-search-container li {
-  border-bottom: 1px solid var(--border-color);
-  color: var(--text-color);
+.swagger-dark-theme #swagger-search-container input[type="search"]:focus-visible {
+  outline-offset: 0 !important;
+}
+
+.swagger-dark-theme #swagger-search-container input[type="search"]:focus-within {
+  outline-offset: 0 !important;
+}
+
+.swagger-dark-theme #swagger-search-container input[type="search"]:active {
+  outline-offset: 0 !important;
+}
+
+.swagger-dark-theme #swagger-search-container input[type="search"] {
+  outline-offset: 0 !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Дополнительные правила для переопределения браузерных стилей */
+.swagger-dark-theme #swagger-search-container input[type="search"]::-webkit-search-decoration,
+.swagger-dark-theme #swagger-search-container input[type="search"]::-webkit-search-cancel-button,
+.swagger-dark-theme #swagger-search-container input[type="search"]::-webkit-search-results-button,
+.swagger-dark-theme #swagger-search-container input[type="search"]::-webkit-search-results-decoration {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Максимально специфичные правила для переопределения outline */
+.swagger-dark-theme html #swagger-search-container input[type="search"]:focus,
+.swagger-dark-theme body #swagger-search-container input[type="search"]:focus,
+.swagger-dark-theme #swagger-ui #swagger-search-container input[type="search"]:focus {
+  outline-offset: 0 !important;
+  box-shadow: 0 0 0 2px rgba(73, 144, 226, 0.2) !important;
+}
+
+/* Универсальное правило для всех input элементов в темной теме */
+.swagger-dark-theme input[type="search"]:focus {
+  outline-offset: 0 !important;
+}
+
+/* Дополнительное правило для focus-visible состояния в темной теме */
+.swagger-dark-theme #swagger-search-container input[type="search"]:focus-visible {
+  outline-offset: 0 !important;
+  -webkit-focus-ring-color: transparent !important;
+}
+
+/* Максимально агрессивное правило для переопределения user agent stylesheet в темной теме */
+.swagger-dark-theme html #swagger-search-container input[type="search"]:focus-visible,
+.swagger-dark-theme body #swagger-search-container input[type="search"]:focus-visible,
+.swagger-dark-theme #swagger-ui #swagger-search-container input[type="search"]:focus-visible {
+  outline-offset: 0 !important;
+  -webkit-focus-ring-color: transparent !important;
+}
+
+/* Ультра-агрессивное правило для полного переопределения в темной теме */
+.swagger-dark-theme * #swagger-search-container input[type="search"]:focus-visible {
+  outline-offset: 0 !important;
+  -webkit-focus-ring-color: transparent !important;
+  box-shadow: 0 0 0 2px rgba(73, 144, 226, 0.2) !important;
+}
+
+.swagger-dark-theme #swagger-search-container ul {
+  background: var(--se-dark-surface);
+  border: 1px solid var(--se-dark-border);
+}
+
+.swagger-dark-theme #swagger-search-container li {
+  border-bottom: 1px solid var(--se-dark-border);
+  color: var(--se-dark-text);
 }
 
 #swagger-search-container li:hover {
-  background-color: var(--btn-bg);
+  background-color: var(--se-dark-btn-bg);
 }
 
-#swagger-search-container li span.route-tag {
+.swagger-dark-theme #swagger-search-container li span.route-tag {
   color: #ffffff;
 }
 
-#swagger-search-container li span.route-method {
+.swagger-dark-theme #swagger-search-container li span.route-method {
   color: #fff;
 }
 
-#swagger-search-container li span.route-path {
-  color: var(--path-color);
+.swagger-dark-theme #swagger-search-container li span.route-path {
+  color: var(--se-primary);
 }
 
-#swagger-search-container li div.route-desc {
+.swagger-dark-theme #swagger-search-container li div.route-desc {
   color: #bbb;
 }
 
@@ -352,29 +412,29 @@ select {
    FAVORITES
 =========================== */
 
-.swagger-fav-enabled .opblock-summary.opblock-summary {
+.swagger-dark-theme .swagger-fav-enabled .opblock-summary.opblock-summary {
   border-left: 4px solid #464646 !important;
 }
 
-.swagger-fav-enabled .opblock-summary.swagger-favorite {
+.swagger-dark-theme .swagger-fav-enabled .opblock-summary.swagger-favorite {
   border-left: 4px solid #ba9d00 !important;
 }
 
-.swagger-favorite .swagger-fav-star {
+.swagger-dark-theme .swagger-favorite .swagger-fav-star {
   color: #ba9d00;
 }
 
 /* ========================
    SCROLL_TOP
 =========================== */
-.swagger-scroll-top {
+.swagger-dark-theme .swagger-scroll-top {
   opacity: .3;
 }
 
 /* ========================
    GITHUB_LINK
 =========================== */
-#swagger-github-link {
+.swagger-dark-theme #swagger-github-link {
   opacity: 0.3 !important;
   color: white !important;
 }
@@ -388,21 +448,35 @@ select {
    FLOATING_MENU
 =========================== */
 
-#swagger-floating-menu {
+.swagger-dark-theme #swagger-floating-menu {
   background: var(--surface-color);
   color: var(--swagger-menu-text);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   backdrop-filter: var(--swagger-menu-blur);
 }
 
+/* Дополнительные правила для отключения outline на всех элементах меню в темной теме */
+.swagger-dark-theme #swagger-floating-menu:focus,
+.swagger-dark-theme #swagger-floating-menu:focus-visible,
+.swagger-dark-theme #swagger-floating-menu:focus-within {
+}
+
+.swagger-dark-theme #swagger-floating-menu * {
+}
+
+.swagger-dark-theme #swagger-floating-menu *:focus,
+.swagger-dark-theme #swagger-floating-menu *:focus-visible,
+.swagger-dark-theme #swagger-floating-menu *:focus-within {
+}
+
 /* ========================
    HIDE_SCHEMAS
 =========================== */
 
-.models-control svg path {
+.swagger-dark-theme .models-control svg path {
   fill: white !important;
 }
 
-.swagger-ui section.models h4{
-  background-color: var(--surface-color) !important;
+.swagger-dark-theme .swagger-ui section.models h4{
+  background-color: var(--se-dark-surface) !important;
 }
