@@ -19,7 +19,8 @@
    BODY PADDING ADJUSTMENT
 =========================== */
 
-body {
+body.swagger-enhancer-active,
+body:has(#swagger-floating-menu) {
   padding-top: calc(var(--se-menu-height) + var(--se-space-sm)) !important;
 }
 
@@ -113,7 +114,8 @@ html.swagger-dark-theme #swagger-floating-menu {
     height: calc(var(--se-menu-height) - 10px);
   }
   
-  body {
+  body.swagger-enhancer-active,
+  body:has(#swagger-floating-menu) {
     padding-top: calc(var(--se-menu-height) + var(--se-space-xs)) !important;
   }
 }

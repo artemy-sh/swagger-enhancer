@@ -10,56 +10,104 @@
   const initializeApp = () => {
     // console.log('Swagger Enhancer: Starting initialization...');
 
-    // Check if all required utilities are available
-    if (!window.SwaggerEnhancerUtils) {
-      console.error('SwaggerEnhancerUtils not loaded');
-      return;
-    }
+    // Check if this is actually a Swagger UI page
+    const checkSwaggerUI = () => {
+      // Check for Swagger UI element
+      if (document.querySelector('.swagger-ui')) {
+        return true;
+      }
+      // Also check for common Swagger UI indicators
+      if (document.querySelector('[data-testid="swagger-ui"]') || 
+          document.querySelector('#swagger-ui') ||
+          document.querySelector('.swagger-container')) {
+        return true;
+      }
+      return false;
+    };
 
-    if (!window.SwaggerEnhancerFeatureManager) {
-      console.error('SwaggerEnhancerFeatureManager not loaded');
-      return;
-    }
+    // Wait a bit for Swagger UI to load, then check
+    const checkAndInit = () => {
+      if (!checkSwaggerUI()) {
+        // If Swagger UI is not found, don't initialize
+        return;
+      }
+
+      // Check if all required utilities are available
+      if (!window.SwaggerEnhancerUtils) {
+        console.error('SwaggerEnhancerUtils not loaded');
+        return;
+      }
+
+      if (!window.SwaggerEnhancerFeatureManager) {
+        console.error('SwaggerEnhancerFeatureManager not loaded');
+        return;
+      }
+
+      // Continue with initialization
+      initFeatures();
+    };
+
+    const initFeatures = () => {
 
     // console.log('Swagger Enhancer: Core utilities loaded');
     // console.log('SwaggerEnhancerUtils:', window.SwaggerEnhancerUtils);
     // console.log('BaseFeature available:', !!window.SwaggerEnhancerUtils?.features?.BaseFeature);
 
-    // Wait a bit for all feature classes to be available
-    setTimeout(() => {
-      // console.log('Swagger Enhancer: Registering features...');
-      
-      // Check feature availability
-      // console.log('Available features:');
-      // console.log('- ThemeFeature:', !!window.ThemeFeature);
-      // console.log('- SearchFeature:', !!window.SearchFeature);
-      // console.log('- FavoritesFeature:', !!window.FavoritesFeature);
-      // console.log('- ScrollTopFeature:', !!window.ScrollTopFeature);
-      // console.log('- HideResponsesFeature:', !!window.HideResponsesFeature);
-      // console.log('- HideSchemasFeature:', !!window.HideSchemasFeature);
-      
-      // Register all features
-      registerFeatures();
+      // Wait a bit for all feature classes to be available
+      setTimeout(() => {
+        // console.log('Swagger Enhancer: Registering features...');
+        
+        // Check feature availability
+        // console.log('Available features:');
+        // console.log('- ThemeFeature:', !!window.ThemeFeature);
+        // console.log('- SearchFeature:', !!window.SearchFeature);
+        // console.log('- FavoritesFeature:', !!window.FavoritesFeature);
+        // console.log('- ScrollTopFeature:', !!window.ScrollTopFeature);
+        // console.log('- HideResponsesFeature:', !!window.HideResponsesFeature);
+        // console.log('- HideSchemasFeature:', !!window.HideSchemasFeature);
+        
+        // Register all features
+        registerFeatures();
 
-      // Check if we have any features registered
-      const features = window.SwaggerEnhancerFeatureManager.getAllFeatures();
-      // console.log(`Swagger Enhancer: ${features.size} features registered`);
+        // Check if we have any features registered
+        const features = window.SwaggerEnhancerFeatureManager.getAllFeatures();
+        // console.log(`Swagger Enhancer: ${features.size} features registered`);
 
-      // Initialize all features
-      window.SwaggerEnhancerFeatureManager.initAll()
-        .then(() => {
-          console.log('Swagger Enhancer: Ready');
-          
-          // Log feature status
-          // const features = window.SwaggerEnhancerFeatureManager.getAllFeatures();
-          // features.forEach((featureData, name) => {
-          //   console.log(`Feature '${name}': ${featureData.enabled ? 'enabled' : 'disabled'}`);
-          // });
-        })
-        .catch((error) => {
-          console.error('Swagger Enhancer: Feature initialization failed:', error);
-        });
-    }, 100);
+        // Initialize all features
+        window.SwaggerEnhancerFeatureManager.initAll()
+          .then(() => {
+            console.log('Swagger Enhancer: Ready');
+            
+            // Log feature status
+            // const features = window.SwaggerEnhancerFeatureManager.getAllFeatures();
+            // features.forEach((featureData, name) => {
+            //   console.log(`Feature '${name}': ${featureData.enabled ? 'enabled' : 'disabled'}`);
+            // });
+          })
+          .catch((error) => {
+            console.error('Swagger Enhancer: Feature initialization failed:', error);
+          });
+      }, 100);
+    };
+
+    // Try to check immediately, and also wait a bit in case Swagger UI loads asynchronously
+    if (checkSwaggerUI()) {
+      checkAndInit();
+    } else {
+      // Wait a bit for Swagger UI to load, check multiple times
+      let attempts = 0;
+      const maxAttempts = 5;
+      const checkInterval = setInterval(() => {
+        attempts++;
+        if (checkSwaggerUI()) {
+          clearInterval(checkInterval);
+          checkAndInit();
+        } else if (attempts >= maxAttempts) {
+          clearInterval(checkInterval);
+          // Swagger UI not found, don't initialize
+        }
+      }, 500);
+    }
   };
 
   /**
@@ -158,7 +206,7 @@
     manager: () => window.SwaggerEnhancerFeatureManager,
     utils: () => window.SwaggerEnhancerUtils,
     features: () => window.SwaggerEnhancerFeatureManager?.getAllFeatures(),
-    version: '1.0.1'
+    version: '1.0.2'
   };
 
   // Check if testing functions are available

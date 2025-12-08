@@ -5,7 +5,7 @@
 [![Chrome / Edge](https://img.shields.io/badge/platform-Chrome%20%7C%20Edge%20%7C%20Yandex-blue)](#установка)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![UI Enhancer](https://img.shields.io/badge/type-Swagger%20UI%20enhancer-orange)](#возможности)
-[![Version](https://img.shields.io/badge/version-1.0.1-lightgrey)](#тестирование)
+[![Version](https://img.shields.io/badge/version-1.0.2-lightgrey)](#тестирование)
 
 #### Содержание
 
