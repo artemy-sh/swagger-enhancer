@@ -2,6 +2,9 @@
 (() => {
   'use strict';
 
+  // Swagger's original filled 20px lock silhouettes.
+  const LOCK_PATH = 'M15.8 8H14V5.6C14 2.703 12.665 1 10 1 7.334 1 6 2.703 6 5.6V8H4c-.553 0-1 .646-1 1.199V17c0 .549.428 1.139.951 1.307l1.197.387C5.672 18.861 6.55 19 7.1 19h5.8c.549 0 1.428-.139 1.951-.307l1.196-.387c.524-.167.953-.757.953-1.306V9.199C17 8.646 16.352 8 15.8 8zM12 8H8V5.199C8 3.754 8.797 3 10 3c1.203 0 2 .754 2 2.199V8z';
+  const UNLOCK_PATH = 'M15.8 8H14V5.6C14 2.703 12.665 1 10 1 7.334 1 6 2.703 6 5.6V6h2v-.801C8 3.754 8.797 3 10 3c1.203 0 2 .754 2 2.199V8H4c-.553 0-1 .646-1 1.199V17c0 .549.428 1.139.951 1.307l1.197.387C5.672 18.861 6.55 19 7.1 19h5.8c.549 0 1.428-.139 1.951-.307l1.196-.387c.524-.167.953-.757.953-1.306V9.199C17 8.646 16.352 8 15.8 8z';
   const UPDATE = 'swagger-enhancer:favorites-update';
   const READY = 'swagger-enhancer:favorites-ready';
   const SELECT_ALL = 'swagger-enhancer:favorites-select-all';
@@ -9,6 +12,47 @@
   const SEARCH_INDEX = 'swagger-enhancer:search-index';
   const SEARCH_CHANGED = 'swagger-enhancer:search-changed';
   const SEARCH_NAVIGATE = 'swagger-enhancer:search-navigate';
+  const AUTH_REQUEST = 'swagger-enhancer:auth-identity-request';
+  const AUTH_IDENTITY = 'swagger-enhancer:auth-identity';
+  const AUTH_CHANGED = 'swagger-enhancer:auth-changed';
+  const AUTH_UI = 'swagger-enhancer:auth-ui';
+  let authUIEnabled = false;
+  const authUIListeners = new Set();
+  document.addEventListener(AUTH_UI, event => {
+    if (!['true', 'false'].includes(event.detail)) return;
+    const next = event.detail === 'true';
+    if (next === authUIEnabled) return;
+    authUIEnabled = next;
+    authUIListeners.forEach(refresh => refresh());
+  });
+  const useAuthUI = React => {
+    const [active, setActive] = React.useState(authUIEnabled);
+    React.useLayoutEffect(() => {
+      const refresh = () => setActive(authUIEnabled);
+      authUIListeners.add(refresh);
+      refresh();
+      return () => authUIListeners.delete(refresh);
+    }, []);
+    return active;
+  };
+  const authorizationNames = system => {
+    const names = new Set();
+    system.authSelectors.authorized()?.forEach(auth => {
+      const schema = auth.get('schema');
+      const isBasic = schema?.get('type') === 'basic' ||
+        (schema?.get('type') === 'http' && schema.get('scheme') === 'basic');
+      const basic = isBasic ? auth.get('value') : null;
+      const candidates = [auth.get('clientId'), auth.get('client_id'), auth.get('username'),
+        basic?.get?.('username') ?? basic?.username];
+      const name = candidates.find(value => typeof value === 'string' && value.trim());
+      if (name) names.add(name.trim());
+    });
+    return [...names];
+  };
+  const authIcon = (React, authorized) => React.createElement('svg', {
+    width: 20, height: 20, viewBox: '0 0 20 20', fill: 'currentColor',
+    'aria-hidden': 'true', focusable: 'false'
+  }, React.createElement('path', { d: authorized ? UNLOCK_PATH : LOCK_PATH }));
   const FAVORITES_KEY = 'swaggerFavorites';
   const refreshers = new Set();
   let enabled = false;
@@ -33,6 +77,11 @@
   });
 
   const plugin = () => {
+    const authChanged = original => (...args) => {
+      const value = original(...args);
+      queueMicrotask(() => document.dispatchEvent(new Event(AUTH_CHANGED)));
+      return value;
+    };
     let lastSource;
     let lastRevision = -1;
     let result;
@@ -53,6 +102,32 @@
     };
     return {
       wrapComponents: {
+        authorizeBtn: (Original, system) => function NativeAuthorization(props) {
+          const { React } = system;
+          if (!useAuthUI(React)) return React.createElement(Original, props);
+          const { isAuthorized, onClick, showPopup, getComponent } = props;
+          const identity = isAuthorized ? authorizationNames(system).join(', ') : '';
+          const label = isAuthorized ? `Authorized${identity ? `: ${identity}` : ''}` : 'Authorize';
+          const Popup = getComponent('authorizationPopup', true);
+          return React.createElement('div', { className: 'auth-wrapper' },
+            React.createElement('button', {
+              type: 'button',
+              className: `btn authorize swagger-native-authorize ${isAuthorized ? 'locked is-authorized' : 'unlocked'}`,
+              onClick, title: label, 'aria-label': label, 'aria-haspopup': 'dialog'
+            }, authIcon(React, isAuthorized), React.createElement('span', null, label)),
+            showPopup ? React.createElement(Popup, null) : null);
+        },
+        authorizeOperationBtn: (Original, { React }) => function RouteAuthorization(props) {
+          if (!useAuthUI(React)) return React.createElement(Original, props);
+          const { isAuthorized, onClick } = props;
+          const label = isAuthorized ? 'Authorized' : 'Authorization required';
+          return React.createElement('button', {
+            type: 'button',
+            className: `authorization__btn swagger-route-authorization${isAuthorized ? ' is-authorized' : ''}`,
+            'aria-label': label, title: label,
+            onClick: event => { event.stopPropagation(); onClick?.(); }
+          }, authIcon(React, isAuthorized));
+        },
         operations: (Original, { React }) => function MeasuredOperations(props) {
           const root = React.useRef(null);
           const wasVirtual = React.useRef(null);
@@ -71,6 +146,14 @@
         }
       },
       statePlugins: {
+        auth: {
+          wrapActions: {
+            authorize: authChanged,
+            authorizeOauth2: authChanged,
+            logout: authChanged,
+            restoreAuthorization: authChanged
+          }
+        },
         layout: {
           actions: { swaggerEnhancerFavoritesChanged: value => ({ type: 'SWAGGER_ENHANCER_FAVORITES_CHANGED', payload: value }) },
           reducers: { SWAGGER_ENHANCER_FAVORITES_CHANGED: (state, action) => state.set('swaggerEnhancerFavoritesRevision', action.payload) }
@@ -96,6 +179,11 @@
         }
       },
       afterLoad(system) {
+        document.addEventListener(AUTH_REQUEST, () => {
+          // Only expose identity while the opt-in authorization feature is enabled.
+          const names = authUIEnabled ? authorizationNames(system) : [];
+          document.dispatchEvent(new CustomEvent(AUTH_IDENTITY, { detail: JSON.stringify(names) }));
+        });
         refreshers.add(() => system.layoutActions.swaggerEnhancerFavoritesChanged(revision));
         document.addEventListener(SEARCH_REQUEST, () => {
           const source = system.specSelectors.taggedOperations();

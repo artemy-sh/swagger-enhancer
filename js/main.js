@@ -13,7 +13,8 @@
       favorites: window.FavoritesFeature,
       scrollTop: window.ScrollTopFeature,
       hideResponses: window.HideResponsesFeature,
-      hideSchemas: window.HideSchemasFeature
+      hideSchemas: window.HideSchemasFeature,
+      authorize: window.AuthorizeFeature
     };
     Object.entries(features).forEach(([name, Feature]) => manager.register(name, Feature));
     manager.initAll().then(() => console.log('Swagger Enhancer: Ready'));

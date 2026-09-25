@@ -33,6 +33,7 @@
         "js/scroll_top.js",
         "js/hide_responses.js",
         "js/hide_schemas.js",
+        "js/authorize.js",
         "js/github_link.js",
         "js/main.js"
       ],
@@ -41,6 +42,7 @@
         "css/floating_menu.css",
         "css/search.css",
         "css/favorites.css",
+        "css/authorization.css",
         "css/scroll_top.css",
         "css/github_link.css"
       ],

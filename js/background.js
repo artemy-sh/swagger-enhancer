@@ -9,7 +9,8 @@
       swaggerFavoritesEnabled: true,
       scrollTopEnabled: true,
       hideResponsesEnabled: false,
-      hideSchemasEnabled: false
+      hideSchemasEnabled: false,
+      authorizeInHeaderEnabled: false
     }, () => {
       if (chrome.runtime.lastError) {
         console.error('Failed to set default settings:', chrome.runtime.lastError.message);
