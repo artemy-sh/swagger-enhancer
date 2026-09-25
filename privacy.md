@@ -1,5 +1,9 @@
 # Privacy Policy
 
-Swagger Enhancer does **not** collect, store, or transmit any personal user data.
+Swagger Enhancer does not collect personal data or send data to developer-operated servers. It does not use analytics.
 
-The extension operates entirely locally in the browser and does not use remote servers or analytics. All settings and preferences (like favorites or theme) are stored locally in the browser's storage and never leave the user's device.
+Extension settings, such as the theme and enabled features, are saved using `chrome.storage.sync`. The browser may synchronize these settings across devices when browser sync is enabled.
+
+Favorite endpoints and the favorites filter are saved in the Swagger site's `localStorage`, separately for each origin. Swagger Enhancer does not synchronize favorites through Chrome Sync.
+
+The optional authorization shortcut opens Swagger UI's existing dialog. It displays the client ID or username when provided by an active Swagger authorization. These identifiers are used only for the button label and are not stored or synchronized by the extension. Tokens, passwords, and client secrets are not read or copied by this feature; Swagger UI handles credentials as usual.
