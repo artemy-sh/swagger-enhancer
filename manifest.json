@@ -45,6 +45,18 @@
         "css/github_link.css"
       ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*/*docs*",
+        "*://*/*swagger*",
+        "*://*/*openapi*"
+      ],
+      "js": [
+        "js/favorites_bridge.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
     }
   ],
   "web_accessible_resources": [

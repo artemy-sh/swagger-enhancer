@@ -43,11 +43,11 @@
    COLLAPSE BUTTON OVERRIDE
 =========================== */
 
-.opblock-summary .opblock-summary-control {
+.swagger-fav-enabled .opblock-summary .opblock-summary-control {
   border: none !important;
 }
 
-.opblock-summary-control:focus {
+.swagger-fav-enabled .opblock-summary-control:focus {
   outline: none !important;
   box-shadow: none !important;
 }

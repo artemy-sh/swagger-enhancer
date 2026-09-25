@@ -13,97 +13,22 @@
   /**
    * Favorites feature class extending BaseFeature
    */
-  class FavoritesFeature extends (window.SwaggerEnhancerUtils?.features?.BaseFeature || class {
-    constructor(storageKey, cssFile = null, options = {}) {
-      this.storageKey = storageKey;
-      this.cssFile = cssFile;
-      this.cssId = cssFile ? `swagger-${storageKey}-style` : null;
-      this.enabled = false;
-      this.observer = null;
-      this.options = { autoInit: true, debug: false, ...options };
-      this.messageType = options.messageType || `TOGGLE_${storageKey.toUpperCase()}`;
-    }
-    async init() {
-      try {
-        if (this.options.debug) console.log(`[${this.constructor.name}] Initializing...`);
-        const result = await this.getStorage([this.storageKey]);
-        this.setEnabled(result[this.storageKey] === true);
-        this.setupMessageListener();
-        if (this.options.debug) console.log(`[${this.constructor.name}] Initialized successfully`);
-      } catch (error) {
-        console.error(`[${this.constructor.name}] Initialization failed:`, error);
-        throw error;
-      }
-    }
-    setEnabled(enabled) {
-      if (this.enabled === enabled) return;
-      this.enabled = enabled;
-      if (enabled) this.enable();
-      else this.disable();
-    }
-    enable() {
-      if (this.options.debug) console.log(`[${this.constructor.name}] Enabling...`);
-      if (this.cssFile) this.injectCSS(this.cssFile, this.cssId);
-      this.onEnable();
-    }
-    disable() {
-      if (this.options.debug) console.log(`[${this.constructor.name}] Disabling...`);
-      if (this.cssId) this.removeCSS(this.cssId);
-      this.cleanup();
-      this.onDisable();
-    }
-    cleanup() {
-      if (this.observer) {
-        this.observer.disconnect();
-        this.observer = null;
-      }
-    }
-    setupMessageListener() {
-      chrome.runtime.onMessage.addListener((message) => {
-        if (message.type === this.messageType) {
-          this.setEnabled(message.enabled === true);
-        }
-      });
-    }
-    onEnable() {}
-    onDisable() {}
-    isEnabled() { return this.enabled; }
-    toggle() { this.setEnabled(!this.enabled); }
-    async getStorage(keys) {
-      return new Promise((resolve) => {
-        chrome.storage.sync.get(keys, (result) => {
-          resolve(chrome.runtime.lastError ? {} : result);
-        });
-      });
-    }
-    injectCSS(cssFile, id) {
-      if (document.getElementById(id)) return true;
-      const link = document.createElement('link');
-      link.id = id;
-      link.rel = 'stylesheet';
-      link.href = chrome.runtime.getURL(cssFile);
-      document.head.appendChild(link);
-      return true;
-    }
-    removeCSS(id) {
-      const element = document.getElementById(id);
-      if (element) element.remove();
-    }
-  }) {
+  class FavoritesFeature extends window.SwaggerEnhancerUtils.features.BaseFeature {
     constructor() {
-      super(STORAGE_KEY, 'css/favorites.css', {
+      super(STORAGE_KEY, null, {
         messageType: 'TOGGLE_FAVORITES',
         debug: false
       });
       
       this.filterState = 0;
-      this.searchCache = new Map();
+      this.hiddenElements = new Map();
     }
 
     onEnable() {
       document.body.classList.add('swagger-fav-enabled');
-      this.injectFavoritesCSS();
       this.filterState = this.getFilterState();
+      this.bridgeReadyHandler = () => this.applyFavoriteFilter();
+      document.addEventListener('swagger-enhancer:favorites-ready', this.bridgeReadyHandler);
       this.enhanceAllSummaries();
       this.insertFavoritesFilter();
       this.startObserver();
@@ -112,14 +37,19 @@
     onDisable() {
       document.body.classList.remove('swagger-fav-enabled');
       this.stopObserver();
+      document.removeEventListener('swagger-enhancer:favorites-ready', this.bridgeReadyHandler);
+      this.updateNativeFilter();
       this.clearFavoritesUI();
+      this.hiddenElements.forEach((display, el) => { el.style.display = display; });
+      this.hiddenElements.clear();
     }
 
     // === Storage Utils ===
 
     getFavoritesMap() {
       try {
-        return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '{}');
+        const favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '{}');
+        return favorites && typeof favorites === 'object' && !Array.isArray(favorites) ? favorites : {};
       } catch {
         return {};
       }
@@ -130,7 +60,8 @@
     }
 
     getFilterState() {
-      return parseInt(localStorage.getItem(FILTER_STATE_KEY) || '0', 10);
+      const state = Number(localStorage.getItem(FILTER_STATE_KEY) || '0');
+      return [0, 1, 2].includes(state) ? state : 0;
     }
 
     saveFilterState(state) {
@@ -147,7 +78,7 @@
 
     // === UI Components ===
 
-    createFavoriteButton(routeKey, summaryEl, isFavorited) {
+    createFavoriteButton(summaryEl, isFavorited) {
       const star = document.createElement('span');
       star.className = 'swagger-fav-star';
       star.textContent = isFavorited ? '★' : '☆';
@@ -157,9 +88,12 @@
       star.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
+        // React may reuse the summary node for a different route.
+        const currentRouteKey = this.getRouteKey(summaryEl);
+        if (!currentRouteKey) return;
         const currentFavorites = this.getFavoritesMap();
-        const alreadyFavorited = !!currentFavorites[routeKey];
-        this.toggleFavorite(routeKey, summaryEl, alreadyFavorited);
+        const alreadyFavorited = !!currentFavorites[currentRouteKey];
+        this.toggleFavorite(currentRouteKey, summaryEl, alreadyFavorited);
         if (this.filterState !== 0) this.applyFavoriteFilter();
       });
 
@@ -169,7 +103,7 @@
     markAsFavorite(summaryEl, isFavorited) {
       summaryEl.classList.toggle('swagger-favorite', isFavorited);
       const star = summaryEl.querySelector('.swagger-fav-star');
-      if (star) star.textContent = isFavorited ? '★' : '☆';
+      if (star && star.textContent !== (isFavorited ? '★' : '☆')) star.textContent = isFavorited ? '★' : '☆';
     }
 
     toggleFavorite(routeKey, summaryEl, isFavorited) {
@@ -187,13 +121,14 @@
 
     enhanceAllSummaries() {
       if (!this.enabled) return;
+      this.enhanceSummaries(document.querySelectorAll('.opblock-summary'));
+      this.applyFavoriteFilter();
+    }
 
+    enhanceSummaries(summaries) {
       const favorites = this.getFavoritesMap();
-      const summaries = document.querySelectorAll('.opblock-summary');
-
       summaries.forEach((summary) => {
-        if (summary.dataset.favApplied) return;
-
+        if (!summary.isConnected) return;
         const routeKey = this.getRouteKey(summary);
         if (!routeKey) return;
 
@@ -201,14 +136,14 @@
         if (!methodEl) return;
 
         const isFavorited = !!favorites[routeKey];
-        const star = this.createFavoriteButton(routeKey, summary, isFavorited);
-
-        methodEl.parentNode.insertBefore(star, methodEl);
+        if (!summary.querySelector('.swagger-fav-star')) {
+          const star = this.createFavoriteButton(summary, isFavorited);
+          methodEl.parentNode.insertBefore(star, methodEl);
+        }
         this.markAsFavorite(summary, isFavorited);
         summary.dataset.favApplied = '1';
       });
 
-      this.applyFavoriteFilter();
     }
 
     clearFavoritesUI() {
@@ -255,6 +190,7 @@
       all.style.cursor = 'pointer';
       all.style.marginRight = '8px';
       all.addEventListener('click', () => {
+        if (this.hasNativeFilter()) document.dispatchEvent(new Event('swagger-enhancer:favorites-select-all'));
         const favorites = this.getFavoritesMap();
         document.querySelectorAll('.opblock-summary').forEach((summary) => {
           const routeKey = this.getRouteKey(summary);
@@ -313,7 +249,25 @@
       }
     }
 
+    hasNativeFilter() {
+      return document.documentElement.dataset.swaggerFavoritesBridge === 'ready';
+    }
+
+    updateNativeFilter() {
+      const state = JSON.stringify({ enabled: this.enabled, filterState: this.filterState });
+      const signature = state + localStorage.getItem(FAVORITES_KEY);
+      if (this.nativeSignature === signature) return;
+      this.nativeSignature = signature;
+      document.dispatchEvent(new CustomEvent('swagger-enhancer:favorites-update', { detail: state }));
+    }
+
     applyFavoriteFilter() {
+      if (this.hasNativeFilter()) {
+        this.hiddenElements.forEach((display, el) => { el.style.display = display; });
+        this.hiddenElements.clear();
+        this.updateNativeFilter();
+        return;
+      }
       const favorites = this.getFavoritesMap();
 
       document.querySelectorAll('.opblock').forEach(opblock => {
@@ -323,56 +277,54 @@
         if (!routeKey) return;
 
         const isFavorite = !!favorites[routeKey];
-        if (this.filterState === 0) opblock.style.display = '';
-        else if (this.filterState === 1) opblock.style.display = isFavorite ? '' : 'none';
-        else opblock.style.display = isFavorite ? 'none' : '';
+        this.setFiltered(opblock, this.filterState === 1 ? !isFavorite : this.filterState === 2 && isFavorite);
       });
 
       document.querySelectorAll('.opblock-tag-section').forEach(section => {
-        const hasVisible = Array.from(section.querySelectorAll('.opblock'))
-          .some(opblock => opblock.style.display !== 'none');
-        section.style.display = hasVisible ? '' : 'none';
+        const blocks = Array.from(section.querySelectorAll('.opblock'));
+        // A collapsed tag may not have mounted its operations yet. Keep its control accessible.
+        this.setFiltered(section, this.filterState !== 0 && blocks.length > 0 &&
+          blocks.every(opblock => this.hiddenElements.has(opblock)));
+      });
+      this.hiddenElements.forEach((display, el) => {
+        if (!el.isConnected) this.hiddenElements.delete(el);
       });
     }
 
-    // === Observer ===
+    setFiltered(element, hidden) {
+      if (hidden) {
+        if (!this.hiddenElements.has(element)) this.hiddenElements.set(element, element.style.display);
+        element.style.display = 'none';
+      } else if (this.hiddenElements.has(element)) {
+        element.style.display = this.hiddenElements.get(element);
+        this.hiddenElements.delete(element);
+      }
+    }
 
     startObserver() {
-      const root = document.querySelector('.swagger-ui');
-      if (!root || this.observer) return;
-
-      this.enhanceAllSummaries();
-      this.insertFavoritesFilter();
-
-      const utils = window.SwaggerEnhancerUtils;
-      const debouncedEnhance = utils?.dom?.debounce || ((fn, delay) => {
-        let timer;
-        return (...args) => {
-          clearTimeout(timer);
-          timer = setTimeout(() => fn(...args), delay);
-        };
-      });
-
-      this.observer = new MutationObserver(debouncedEnhance((mutations) => {
-        const shouldUpdate = mutations.some((mutation) =>
-          [...mutation.addedNodes, ...mutation.removedNodes].some((node) =>
-            node.nodeType === 1 && (
-              node.matches?.('.opblock') || node.querySelector?.('.opblock')
-            )
-          ) || mutation.type === 'attributes'
-        );
-
-        if (shouldUpdate) {
-          this.enhanceAllSummaries();
+      if (this.observer) return;
+      this.observer = new MutationObserver(mutations => {
+        if (!this.enabled) return;
+        const summaries = new Set();
+        for (const mutation of mutations) {
+          // Ignore our own star updates. Enhance newly mounted/reused rows before paint,
+          // without waiting for scrolling to stop or rescanning the entire document.
+          if (mutation.target.nodeType === 1 && !mutation.target.closest('.swagger-fav-star')) {
+            const summary = mutation.target.closest('.opblock-summary');
+            if (summary) summaries.add(summary);
+          }
+          for (const node of mutation.addedNodes) {
+            if (node.nodeType !== 1) continue;
+            if (node.matches('.opblock-summary')) summaries.add(node);
+            node.querySelectorAll('.opblock-summary').forEach(summary => summaries.add(summary));
+          }
         }
-      }, 100));
-
-      this.observer.observe(root, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['class']
+        if (summaries.size) {
+          this.enhanceSummaries(summaries);
+          if (!this.hasNativeFilter()) this.applyFavoriteFilter();
+        }
       });
+      this.observer.observe(document.body, { childList: true, subtree: true });
     }
 
     stopObserver() {
@@ -380,12 +332,6 @@
       this.observer = null;
     }
 
-    // === CSS Injection ===
-
-    injectFavoritesCSS() {
-      // CSS is already injected by BaseFeature, no need to inject again
-      // This method is kept for compatibility but does nothing
-    }
   }
 
   // Export class to global scope
