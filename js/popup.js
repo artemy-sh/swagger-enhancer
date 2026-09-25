@@ -14,7 +14,8 @@
     { id: 'scrollTopToggle', storageKey: 'scrollTopEnabled', messageType: 'TOGGLE_SCROLL_TOP' },
     { id: 'hideResponsesToggle', storageKey: 'hideResponsesEnabled', messageType: 'TOGGLE_HIDE_RESPONSES' },
     { id: 'hideSchemasToggle', storageKey: 'hideSchemasEnabled', messageType: 'TOGGLE_HIDE_SCHEMAS' },
-    { id: 'authorizeInHeaderToggle', storageKey: 'authorizeInHeaderEnabled', messageType: 'TOGGLE_AUTHORIZE_IN_HEADER' }
+    { id: 'authorizeInHeaderToggle', storageKey: 'authorizeInHeaderEnabled', messageType: 'TOGGLE_AUTHORIZE_IN_HEADER' },
+    { id: 'copyFullUrlToggle', storageKey: 'copyFullUrlEnabled', messageType: 'TOGGLE_COPY_FULL_URL' }
   ];
 
   let elements = {};

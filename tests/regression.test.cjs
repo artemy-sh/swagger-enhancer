@@ -7,8 +7,8 @@ const root = path.resolve(__dirname, '..');
 const route = (url = '/pets') => `<div class="opblock"><div class="opblock-summary"><button class="opblock-summary-control"><span class="opblock-summary-method">GET</span><span class="opblock-summary-path">${url}</span></button></div></div>`;
 const wrapper = (live = false) => `<div class="responses-wrapper"><div class="opblock-section-header"><h4>Responses</h4></div><table class="responses-table"></table>${live ? '<table class="live-responses-table"></table>' : ''}</div>`;
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-function setup(t, html = '', settings = {}) {
-  const dom = new JSDOM(`<html><head></head><body>${html}</body></html>`, { url: 'https://example.test/docs', runScripts: 'outside-only', pretendToBeVisual: true });
+function setup(t, html = '', settings = {}, url = 'https://example.test/docs') {
+  const dom = new JSDOM(`<html><head></head><body>${html}</body></html>`, { url, runScripts: 'outside-only', pretendToBeVisual: true });
   const instances = [];
   const errors = [];
   dom.window.addEventListener('error', event => errors.push(event.message));
@@ -24,7 +24,7 @@ function setup(t, html = '', settings = {}) {
   w.chrome = { runtime: { getURL: p => `chrome-extension://test/${p}`, onMessage: event() }, storage: { onChanged: event(), sync: { get(keys, cb) { cb(Object.fromEntries(keys.filter(k => k in settings).map(k => [k, settings[k]]))); } } } };
   const load = name => w.eval(fs.readFileSync(path.join(root, 'js', name + '.js'), 'utf8'));
   load('utils');
-  return { w, d: w.document, load, feature(name) { load(name); const key = { favorites: 'Favorites', search: 'Search', hide_responses: 'HideResponses', hide_schemas: 'HideSchemas', authorize: 'Authorize', theme: 'Theme', scroll_top: 'ScrollTop' }[name]; const instance = new w[key + 'Feature'](); instances.push(instance); return instance; } };
+  return { w, d: w.document, load, feature(name) { load(name); const key = { favorites: 'Favorites', search: 'Search', hide_responses: 'HideResponses', hide_schemas: 'HideSchemas', authorize: 'Authorize', copy_url: 'CopyURL', theme: 'Theme', scroll_top: 'ScrollTop' }[name]; const instance = new w[key + 'Feature'](); instances.push(instance); return instance; } };
 }
 
 test('disabling favorites restores filtered endpoints and preserves page display styles', t => {
@@ -267,7 +267,7 @@ test('whole app leaves ordinary docs pages alone and initializes once when Swagg
   assert.equal(d.body.classList.contains('swagger-enhancer-active'), false);
   d.body.insertAdjacentHTML('beforeend', `<div class="swagger-ui">${route()}</div>`);
   await pause(150);
-  assert.equal(w.SwaggerEnhancerFeatureManager.getAllFeatures().size, 7);
+  assert.equal(w.SwaggerEnhancerFeatureManager.getAllFeatures().size, 8);
   assert.equal(d.querySelectorAll('#swagger-floating-menu').length, 1);
   assert.equal(d.querySelectorAll('.swagger-fav-star').length, 1);
   assert.ok(d.querySelector('#swagger-search-container'));
@@ -277,7 +277,7 @@ test('cleanup removes feature UI, styles and listeners across enable/disable cyc
   const { w, d, load } = setup(t, `<div class="swagger-ui">${route()}</div>`);
   load('feature_manager');
   const manager = w.SwaggerEnhancerFeatureManager;
-  for (const [file, name] of [['theme', 'Theme'], ['search', 'Search'], ['favorites', 'Favorites'], ['scroll_top', 'ScrollTop'], ['hide_responses', 'HideResponses'], ['hide_schemas', 'HideSchemas'], ['authorize', 'Authorize']]) {
+  for (const [file, name] of [['theme', 'Theme'], ['search', 'Search'], ['favorites', 'Favorites'], ['scroll_top', 'ScrollTop'], ['hide_responses', 'HideResponses'], ['hide_schemas', 'HideSchemas'], ['authorize', 'Authorize'], ['copy_url', 'CopyURL']]) {
     load(file); manager.register(file, w[name + 'Feature']);
   }
   await manager.initAll();
@@ -425,7 +425,8 @@ test('every popup toggle persists its matching setting and message; failed write
     ['scrollTopToggle', 'scrollTopEnabled', 'TOGGLE_SCROLL_TOP'],
     ['hideResponsesToggle', 'hideResponsesEnabled', 'TOGGLE_HIDE_RESPONSES'],
     ['hideSchemasToggle', 'hideSchemasEnabled', 'TOGGLE_HIDE_SCHEMAS'],
-    ['authorizeInHeaderToggle', 'authorizeInHeaderEnabled', 'TOGGLE_AUTHORIZE_IN_HEADER']
+    ['authorizeInHeaderToggle', 'authorizeInHeaderEnabled', 'TOGGLE_AUTHORIZE_IN_HEADER'],
+    ['copyFullUrlToggle', 'copyFullUrlEnabled', 'TOGGLE_COPY_FULL_URL']
   ];
   for (const [id, key, type] of config) {
     const toggle = d.getElementById(id); assert.equal(toggle.checked, false);
@@ -433,12 +434,12 @@ test('every popup toggle persists its matching setting and message; failed write
     assert.equal(writes.at(-1)[key], true); assert.equal(messages.at(-1).type, type);
     assert.equal(messages.at(-1).enabled, true);
   }
-  assert.equal(writes.length, 7); assert.equal(messages.length, 7);
+  assert.equal(writes.length, 8); assert.equal(messages.length, 8);
   fail = true;
   const toggle = d.getElementById('toggle'); toggle.checked = false; toggle.dispatchEvent(new w.Event('change')); await pause(0);
   assert.equal(toggle.checked, true);
   assert.equal(d.getElementById('container').classList.contains('dark'), true);
-  assert.equal(messages.length, 7);
+  assert.equal(messages.length, 8);
 });
 
 test('factory adapter preserves host options, statics, receiver and plugin instance', t => {
@@ -517,4 +518,190 @@ test('authorization styles align icon spacing and only override native controls 
   }
   d.body.classList.remove('swagger-authorization-enabled');
   assert.equal(w.getComputedStyle(native.querySelector('svg')).color, 'rgb(73, 204, 144)');
+});
+
+function copyURLControl(t, url, enabled = true) {
+  const context = setup(t, '', {}, url);
+  const { w, load } = context;
+  let plugin;
+  w.SwaggerUIBundle = options => { plugin = options.plugins.at(-1)(); };
+  load('favorites_bridge'); w.SwaggerUIBundle({});
+  const statuses = [], updates = [], hooks = [], effects = [], timers = new Map();
+  let cursor = 0, operation = null, nextTimer = 1;
+  const feature = context.feature('copy_url'); feature.setEnabled(enabled);
+  // A small hook harness lets feedback rerender and cleans effects exactly once.
+  // Timers are controlled explicitly, so a 2-second confirmation adds no test delay.
+  w.setTimeout = callback => { const id = nextTimer++; timers.set(id, callback); return id; };
+  w.clearTimeout = id => timers.delete(id);
+  t.after(() => hooks.forEach(hook => hook?.cleanup?.()));
+  const React = {
+    Fragment: Symbol('Fragment'),
+    createElement: (type, props, ...children) => ({ type, props, children: children.filter(child => child != null) }),
+    createContext: () => ({ Provider: Symbol('Provider') }),
+    useContext: () => operation,
+    useRef: value => hooks[cursor++] ||= { current: value },
+    useState: value => {
+      const slot = cursor++;
+      hooks[slot] ||= { value };
+      return [hooks[slot].value, next => {
+        hooks[slot].value = next;
+        (typeof value === 'boolean' ? updates : statuses).push(next);
+      }];
+    },
+    useLayoutEffect: (effect, dependencies) => {
+      const slot = cursor++, previous = hooks[slot];
+      if (!previous || dependencies.some((value, i) => value !== previous.dependencies[i])) {
+        effects.push(() => { previous?.cleanup?.(); hooks[slot] = { dependencies, cleanup: effect() }; });
+      }
+    }
+  };
+  const Original = () => {};
+  const Wrapped = plugin.wrapComponents.CopyToClipboardBtn(Original, { React });
+  const Component = props => {
+    cursor = 0; const tree = Wrapped(props); effects.splice(0).forEach(effect => effect()); return tree;
+  };
+  return { ...context, Original, Component, statuses, updates, copyFeature: feature,
+    setOperation: value => { operation = { get: key => value[key] }; },
+    summary: props => plugin.wrapComponents.OperationSummary(Original, { React })(props),
+    expire: () => { const callbacks = [...timers.values()]; timers.clear(); callbacks.forEach(callback => callback()); },
+    dispose: () => hooks.forEach(hook => hook?.cleanup?.()) };
+
+}
+
+test('full URL setting is off by default and sync toggles restore the original component', async t => {
+  const { w, d, Component, Original, copyFeature, updates } = copyURLControl(t, undefined, false);
+  await copyFeature.init();
+  const props = { textToCopy: '/pets' };
+  assert.equal(Component(props).type, Original);
+  assert.equal(d.querySelector('link[href$="copy_url.css"]'), null);
+  w.chrome.storage.onChanged.emit({ copyFullUrlEnabled: { newValue: true } }, 'sync');
+  assert.equal(updates.at(-1), true);
+  assert.equal(Component(props).children[0].type, 'button');
+  assert.ok(d.querySelector('link[href$="copy_url.css"]'));
+  w.chrome.runtime.onMessage.emit({ type: 'TOGGLE_COPY_FULL_URL', enabled: false });
+  assert.equal(updates.at(-1), false);
+  assert.equal(Component(props).type, Original);
+  assert.equal(Component(props).props, props);
+  assert.equal(d.querySelector('link[href$="copy_url.css"]'), null);
+  copyFeature.setEnabled(true);
+  assert.equal(Component(props).children[0].type, 'button');
+  const states = [];
+  d.addEventListener('swagger-enhancer:copy-url-ui', event => states.push(event.detail));
+  d.dispatchEvent(new w.Event('swagger-enhancer:favorites-ready'));
+  assert.equal(states.at(-1), 'true', 'late Swagger initialization receives the setting');
+  copyFeature.destroy();
+  const count = states.length;
+  d.dispatchEvent(new w.Event('swagger-enhancer:favorites-ready'));
+  assert.equal(states.length, count, 'destroy removes the ready listener');
+  assert.equal(Component(props).type, Original);
+});
+
+test('full URL copy sits before the native path control and preserves route templates and query', async t => {
+  const { w, Component, Original, statuses } = copyURLControl(t);
+  const copied = []; w.navigator.clipboard = { writeText: async text => copied.push(text) };
+  let prevented = 0, stopped = 0;
+  for (const path of ['/api/pets/{pet_id}', '/api/pets?active=true', '//literal/path', '/']) {
+    const props = { textToCopy: path, marker: 'host' };
+    const tree = Component(props), [button, native] = tree.children;
+    assert.equal(button.type, 'button'); assert.equal(button.props.type, 'button');
+    assert.equal(button.props['aria-label'], 'Copy full URL to clipboard');
+    assert.equal(native.type, Original); assert.equal(native.props, props);
+    await button.props.onClick({ preventDefault: () => prevented++, stopPropagation: () => stopped++ });
+    assert.equal(copied.at(-1), 'https://example.test' + path);
+    assert.equal(statuses.at(-1).ok, true);
+  }
+  assert.equal(prevented, 4); assert.equal(stopped, 4);
+  assert.equal(Component({ textToCopy: 'non-route text' }).type, Original);
+  assert.equal(Component({}).type, Original);
+});
+
+test('full URL copy uses the current host and port after a route rerender', async t => {
+  const { w, Component } = copyURLControl(t, 'http://localhost:8080/docs');
+  w.history.replaceState(null, '', '/nested/docs?token=private#operation');
+  const copied = []; w.navigator.clipboard = { writeText: async text => copied.push(text) };
+  for (const path of ['/before', '/after']) {
+    await Component({ textToCopy: path }).children[0].props.onClick({ preventDefault() {}, stopPropagation() {} });
+  }
+  assert.deepEqual(copied, ['http://localhost:8080/before', 'http://localhost:8080/after']);
+});
+
+test('clipboard fallback restores focus and selection and reports copy failure honestly', async t => {
+  const { w, d, Component, statuses } = copyURLControl(t);
+  d.body.innerHTML = '<button>Original focus</button><p>Selected text</p>';
+  const focused = d.querySelector('button'); focused.focus();
+  const range = d.createRange(); range.selectNodeContents(d.querySelector('p'));
+  w.getSelection().removeAllRanges();
+  w.getSelection().addRange(range);
+  assert.equal(w.getSelection().toString(), 'Selected text');
+  w.navigator.clipboard = { writeText: async () => { throw new Error('denied'); } };
+  let copied;
+  d.execCommand = command => { assert.equal(command, 'copy'); copied = d.activeElement.value; return true; };
+  const button = Component({ textToCopy: '/api/pets/{id}' }).children[0];
+  await button.props.onClick({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(copied, 'https://example.test/api/pets/{id}');
+  assert.equal(d.activeElement, focused); assert.equal(w.getSelection().toString(), 'Selected text');
+  assert.equal(d.querySelector('textarea'), null); assert.equal(statuses.at(-1).ok, true);
+  delete w.navigator.clipboard;
+  d.execCommand = () => false;
+  await button.props.onClick({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(statuses.at(-1).ok, false);
+  assert.equal(d.activeElement, focused); assert.equal(d.querySelector('textarea'), null);
+  assert.match(Component({ textToCopy: '/api/pets/{id}' }).children[0].props.className, /is-copy-error/);
+});
+
+test('copy success turns blue with a visible confirmation until its timer expires', async t => {
+  const { w, Component, expire } = copyURLControl(t);
+  let finish;
+  w.navigator.clipboard = { writeText: () => new Promise(resolve => { finish = resolve; }) };
+  const props = { textToCopy: '/pets' };
+  const pending = Component(props).children[0].props.onClick({ preventDefault() {}, stopPropagation() {} });
+  assert.doesNotMatch(Component(props).children[0].props.className, /is-copied/);
+  finish(); await pending;
+  const button = Component(props).children[0];
+  assert.match(button.props.className, /is-copied/);
+  assert.equal(button.children[1].props.role, 'status');
+  assert.equal(button.children[1].children[0], 'Copied!');
+  expire();
+  assert.doesNotMatch(Component(props).children[0].props.className, /is-copied/);
+  assert.equal(Component(props).children[0].children.length, 1);
+});
+
+test('documentation copy uses the exact operation anchor and sits left of the full URL copy', async t => {
+  const { w, Component, Original, setOperation, summary } = copyURLControl(t);
+  const operationProps = { tag: 'init_data', operationId: 'init_data_get_api_v1_common_init_data_get' };
+  setOperation(operationProps);
+  const originalProps = { operationProps, marker: 'host-summary' };
+  const provider = summary(originalProps);
+  assert.equal(provider.props.value, operationProps);
+  assert.equal(provider.children[0].type, Original);
+  assert.equal(provider.children[0].props, originalProps);
+  const copied = []; w.navigator.clipboard = { writeText: async text => copied.push(text) };
+  const props = { textToCopy: '/api/v1/common/init_data' };
+  const [docs, full, native] = Component(props).children;
+  assert.match(docs.props.className, /swagger-copy-docs-url/);
+  assert.match(full.props.className, /swagger-copy-full-url/);
+  assert.equal(native.type, Original);
+  await docs.props.onClick({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(copied.at(-1), 'https://example.test/docs#/init_data/init_data_get_api_v1_common_init_data_get');
+  assert.match(Component(props).children[0].props.className, /is-copied/);
+  assert.doesNotMatch(Component(props).children[1].props.className, /is-copied/);
+  w.history.replaceState(null, '', '/docs?url=other-spec.json#/old/operation');
+  setOperation({ tag: 'Other tag', operationId: 'generated_get' });
+  await Component(props).children[0].props.onClick({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(copied.at(-1), 'https://example.test/docs?url=other-spec.json#/Other%20tag/generated_get');
+});
+
+test('late clipboard results cannot restore feedback after disabling or unmounting', async t => {
+  const { w, Component, statuses, copyFeature, dispose } = copyURLControl(t);
+  let finish;
+  w.navigator.clipboard = { writeText: () => new Promise(resolve => { finish = resolve; }) };
+  const props = { textToCopy: '/pets' };
+  let pending = Component(props).children[0].props.onClick({ preventDefault() {}, stopPropagation() {} });
+  copyFeature.setEnabled(false); Component(props);
+  const beforeDisable = statuses.length;
+  finish(); await pending; assert.equal(statuses.length, beforeDisable);
+  copyFeature.setEnabled(true);
+  pending = Component(props).children[0].props.onClick({ preventDefault() {}, stopPropagation() {} });
+  dispose(); const beforeUnmount = statuses.length;
+  finish(); await pending; assert.equal(statuses.length, beforeUnmount);
 });

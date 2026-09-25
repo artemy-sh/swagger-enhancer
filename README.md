@@ -50,6 +50,9 @@ Adds dark theme, endpoint search, favorites management, response/schema hiding, 
 * **Scroll to Top**
   Quickly scroll to the top of the page — especially helpful with long specs.
 
+* **Copy full URL**
+  Enable `Copy full URL` in the extension settings (off by default). Two buttons appear to the left of Swagger's copy-path control: a document icon copies a link to the operation's documentation (`docs#/tag/operationId`), and a link icon copies the current page origin (protocol, host and port) plus the route path, preserving placeholders such as `{id}`. Successful copying turns the button blue and shows “Copied!” for two seconds. Controls appear on route hover or keyboard focus; the original control still copies only the path. Available with the standard SwaggerUIBundle adapter.
+
 * **Authorize in header**
   Open Swagger's standard authorization dialog from the fixed header, at any scroll position. Enable `Authorize in header` in the extension settings (off by default). Both the original Swagger button and the header shortcut are red before authorization and green afterwards, labelled `Authorized: client_id` (or username when available); without an identifier it shows `Authorized`. The shortcut appears only when the API offers authorization. Operation locks are closed/red when unauthorized and open/green when authorized for that operation. All these changes are controlled by the same setting; disabling it restores the original Swagger authorization buttons and icons.
 
@@ -155,7 +158,7 @@ npx playwright install chromium
 npm run test:browser
 ```
 
-`npm test` runs 46 tests in Node without starting a browser: DOM regressions with mocked Chrome APIs and integration tests using real Swagger UI 4/5 selectors against a 400-operation specification. Coverage includes favorites modes and bulk selection, full-spec search and navigation, cache invalidation, authorization privacy and opt-in behavior, icon spacing, popup persistence failures, schemas, live responses, scrolling, and initialization/cleanup races.
+`npm test` runs 53 tests in Node without starting a browser: DOM regressions with mocked Chrome APIs and integration tests using real Swagger UI 4/5 selectors against a 400-operation specification. Coverage includes favorites modes and bulk selection, full-spec search and navigation, cache invalidation, authorization privacy and opt-in behavior, icon spacing, popup persistence failures, schemas, live responses, scrolling, and initialization/cleanup races.
 
 `npm run test:browser` is a separate, optional suite. It loads the actual extension in a temporary Chromium profile against a local Swagger UI and API fixture. It checks popup toggles, cross-tab settings, favorites persistence, search, schemas, Execute responses, and scroll-to-top. A 400-operation / 20-tag scenario checks virtualization, offscreen favorites, filter modes, select-all, and reset. No production API is called. Node tests do not verify actual browser layout or scrolling geometry.
 

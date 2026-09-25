@@ -34,6 +34,7 @@
         "js/hide_responses.js",
         "js/hide_schemas.js",
         "js/authorize.js",
+        "js/copy_url.js",
         "js/github_link.js",
         "js/main.js"
       ],

@@ -14,7 +14,8 @@
       scrollTop: window.ScrollTopFeature,
       hideResponses: window.HideResponsesFeature,
       hideSchemas: window.HideSchemasFeature,
-      authorize: window.AuthorizeFeature
+      authorize: window.AuthorizeFeature,
+      copyURL: window.CopyURLFeature
     };
     Object.entries(features).forEach(([name, Feature]) => manager.register(name, Feature));
     manager.initAll().then(() => console.log('Swagger Enhancer: Ready'));

@@ -35,6 +35,25 @@
     }, []);
     return active;
   };
+  let copyURLEnabled = false;
+  const copyURLListeners = new Set();
+  document.addEventListener('swagger-enhancer:copy-url-ui', event => {
+    if (!['true', 'false'].includes(event.detail)) return;
+    const next = event.detail === 'true';
+    if (next === copyURLEnabled) return;
+    copyURLEnabled = next;
+    copyURLListeners.forEach(refresh => refresh());
+  });
+  const useCopyURL = React => {
+    const [active, setActive] = React.useState(copyURLEnabled);
+    React.useLayoutEffect(() => {
+      const refresh = () => setActive(copyURLEnabled);
+      copyURLListeners.add(refresh);
+      refresh();
+      return () => copyURLListeners.delete(refresh);
+    }, []);
+    return active;
+  };
   const authorizationNames = system => {
     const names = new Set();
     system.authSelectors.authorized()?.forEach(auth => {
@@ -53,6 +72,36 @@
     width: 20, height: 20, viewBox: '0 0 20 20', fill: 'currentColor',
     'aria-hidden': 'true', focusable: 'false'
   }, React.createElement('path', { d: authorized ? UNLOCK_PATH : LOCK_PATH }));
+  const copyText = async text => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch { /* HTTP pages and denied clipboard access may need the legacy path. */ }
+    const focused = document.activeElement;
+    const selection = window.getSelection();
+    const ranges = Array.from({ length: selection?.rangeCount || 0 }, (_, i) => selection.getRangeAt(i).cloneRange());
+    const input = document.createElement('textarea');
+    input.value = text;
+    input.readOnly = true;
+    input.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+    document.body.appendChild(input);
+    try {
+      input.focus({ preventScroll: true });
+      input.select();
+      return document.execCommand?.('copy') === true;
+    } catch {
+      return false;
+    } finally {
+      input.remove();
+      focused?.focus({ preventScroll: true });
+      if (selection) {
+        selection.removeAllRanges();
+        ranges.forEach(range => selection.addRange(range));
+      }
+    }
+  };
   const FAVORITES_KEY = 'swaggerFavorites';
   const refreshers = new Set();
   let enabled = false;
@@ -77,6 +126,8 @@
   });
 
   const plugin = () => {
+    let operationContext;
+    const getOperationContext = React => operationContext ||= React.createContext(null);
     const authChanged = original => (...args) => {
       const value = original(...args);
       queueMicrotask(() => document.dispatchEvent(new Event(AUTH_CHANGED)));
@@ -102,6 +153,64 @@
     };
     return {
       wrapComponents: {
+        OperationSummary: (Original, { React }) => function SummaryWithCopyContext(props) {
+          return React.createElement(getOperationContext(React).Provider, { value: props.operationProps },
+            React.createElement(Original, props));
+        },
+        CopyToClipboardBtn: (Original, { React }) => function CopyRouteLinks(props) {
+          const [feedback, setFeedback] = React.useState(null);
+          const pending = React.useRef({ timer: null, request: 0 });
+          const active = useCopyURL(React);
+          const operation = React.useContext(getOperationContext(React));
+          const path = props.textToCopy;
+          const tag = operation?.get('tag');
+          const operationId = operation?.get('operationId');
+          let docsURL;
+          if (typeof tag === 'string' && typeof operationId === 'string' && operationId) {
+            // Use the exact tag and generated operationId used by Swagger's own DeepLink.
+            const url = new URL(window.location.href);
+            url.hash = '/' + `${tag}/${operationId}`.trim().replace(/\s/g, '%20');
+            docsURL = url.href;
+          }
+          React.useLayoutEffect(() => {
+            setFeedback(null);
+            return () => {
+              clearTimeout(pending.current.timer);
+              pending.current.request++;
+            };
+          }, [active, path, docsURL]);
+          const native = React.createElement(Original, props);
+          if (!active || typeof path !== 'string' || !path.startsWith('/')) return native;
+          const copyButton = (kind, text, label, icon) => {
+            const state = feedback?.kind === kind ? feedback : null;
+            const hint = state ? (state.ok ? 'Copied!' : 'Could not copy') : '';
+            return React.createElement('button', {
+              key: kind, type: 'button',
+              className: `view-line-link swagger-copy-link swagger-copy-${kind}-url${state ? (state.ok ? ' is-copied' : ' is-copy-error') : ''}`,
+              title: hint || label, 'aria-label': label,
+              onClick: async event => {
+                event.preventDefault();
+                event.stopPropagation();
+                const request = ++pending.current.request;
+                clearTimeout(pending.current.timer);
+                setFeedback(null);
+                const ok = await copyText(text);
+                if (request !== pending.current.request) return;
+                setFeedback({ kind, ok });
+                pending.current.timer = setTimeout(() => setFeedback(null), 2000);
+              }
+            }, React.createElement('svg', {
+              width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none',
+              stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round',
+              strokeLinejoin: 'round', 'aria-hidden': 'true', focusable: 'false'
+            }, React.createElement('path', { d: icon })),
+            state ? React.createElement('span', { className: 'swagger-copy-hint', role: 'status' }, hint) : null);
+          };
+          return React.createElement(React.Fragment, null,
+            docsURL ? copyButton('docs', docsURL, 'Copy documentation link', 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M8 13h8 M8 17h6') : null,
+            copyButton('full', window.location.origin + path, 'Copy full URL to clipboard', 'M10 13a5 5 0 0 0 7 .3l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7-.3l-3 3a5 5 0 0 0 7 7l1.7-1.7'),
+            native);
+        },
         authorizeBtn: (Original, system) => function NativeAuthorization(props) {
           const { React } = system;
           if (!useAuthUI(React)) return React.createElement(Original, props);
