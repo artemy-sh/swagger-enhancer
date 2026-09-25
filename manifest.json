@@ -19,7 +19,9 @@
   "content_scripts": [
     {
       "matches": [
-        "*://*/*docs*"
+        "*://*/*docs*",
+        "*://*/*swagger*",
+        "*://*/*openapi*"
       ],
       "js": [
         "js/utils.js",
@@ -32,8 +34,7 @@
         "js/hide_responses.js",
         "js/hide_schemas.js",
         "js/github_link.js",
-        "js/main.js",
-        "js/test_runner.js"
+        "js/main.js"
       ],
       "css": [
         "css/variables.css",
@@ -49,10 +50,11 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "css/*.css",
-        "js/page_test_functions.js"
+        "css/*.css"
       ],
-      "matches": ["<all_urls>"]
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "icons": {

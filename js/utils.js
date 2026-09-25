@@ -68,10 +68,12 @@
        */
       debounce(fn, delay) {
         let timer;
-        return (...args) => {
+        const debounced = (...args) => {
           clearTimeout(timer);
           timer = setTimeout(() => fn(...args), delay);
         };
+        debounced.cancel = () => clearTimeout(timer);
+        return debounced;
       },
 
       /**
@@ -92,6 +94,7 @@
             const found = document.querySelector(selector);
             if (found) {
               obs.disconnect();
+              clearTimeout(timer);
               resolve(found);
             }
           });
@@ -102,7 +105,7 @@
           });
 
           // Timeout fallback
-          setTimeout(() => {
+          const timer = setTimeout(() => {
             observer.disconnect();
             resolve(null);
           }, timeout);
@@ -222,6 +225,7 @@
           this.cssFile = cssFile;
           this.cssId = cssFile ? `swagger-${storageKey}-style` : null;
           this.enabled = false;
+          this.destroyed = false;
           this.observer = null;
           this.options = {
             autoInit: true,
@@ -235,14 +239,17 @@
          * Initialize the feature
          */
         async init() {
+          if (this.destroyed) return;
           try {
             if (this.options.debug) {
               console.log(`[${this.constructor.name}] Initializing...`);
             }
 
-            const result = await SwaggerEnhancerUtils.storage.get([this.storageKey]);
-            this.setEnabled(result[this.storageKey] === true);
+            // Subscribe before reading so an in-flight read cannot overwrite a newer setting.
             this.setupMessageListener();
+            const revision = this.settingsRevision;
+            const result = await SwaggerEnhancerUtils.storage.get([this.storageKey]);
+            if (!this.destroyed && revision === this.settingsRevision) this.setEnabled(result[this.storageKey] === true);
             
             if (this.options.debug) {
               console.log(`[${this.constructor.name}] Initialized successfully`);
@@ -258,6 +265,7 @@
          * @param {boolean} enabled - Whether feature should be enabled
          */
         setEnabled(enabled) {
+          if (this.destroyed) return;
           if (this.enabled === enabled) return;
           
           this.enabled = enabled;
@@ -314,11 +322,32 @@
          * Setup message listener for runtime communication
          */
         setupMessageListener() {
-          chrome.runtime.onMessage.addListener((message) => {
-            if (message.type === this.messageType) {
+          if (this.messageListener) return;
+          this.settingsRevision = 0;
+          this.messageListener = (message) => {
+            if (message?.type === this.messageType) {
+              this.settingsRevision++;
               this.setEnabled(message.enabled === true);
             }
-          });
+          };
+          this.storageListener = (changes, area) => {
+            if (area === 'sync' && Object.prototype.hasOwnProperty.call(changes, this.storageKey)) {
+              this.settingsRevision++;
+              this.setEnabled(changes[this.storageKey].newValue === true);
+            }
+          };
+          chrome.runtime.onMessage.addListener(this.messageListener);
+          chrome.storage.onChanged.addListener(this.storageListener);
+        }
+
+        destroy() {
+          this.setEnabled(false);
+          this.destroyed = true;
+          this.cleanup();
+          if (this.messageListener) chrome.runtime.onMessage.removeListener(this.messageListener);
+          if (this.storageListener) chrome.storage.onChanged.removeListener(this.storageListener);
+          this.messageListener = null;
+          this.storageListener = null;
         }
 
         /**
@@ -359,4 +388,3 @@
   // Mark as loaded
   // console.log('SwaggerEnhancerUtils loaded');
 })();
-

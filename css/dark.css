@@ -449,10 +449,10 @@
 =========================== */
 
 .swagger-dark-theme #swagger-floating-menu {
-  background: var(--surface-color);
-  color: var(--swagger-menu-text);
+  background: var(--se-dark-surface);
+  color: var(--se-menu-text);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  backdrop-filter: var(--swagger-menu-blur);
+  backdrop-filter: var(--se-menu-blur);
 }
 
 /* Дополнительные правила для отключения outline на всех элементах меню в темной теме */

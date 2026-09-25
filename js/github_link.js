@@ -1,4 +1,4 @@
-(() => {
+window.createSwaggerGithubLink = () => {
   const link = document.createElement('a');
   link.href = 'https://github.com/artemy-sh/swagger-enhancer';
   link.target = '_blank';
@@ -20,4 +20,4 @@
 
   const menuRight = document.querySelector('#swagger-floating-menu .swagger-menu-right');
   if (menuRight) menuRight.appendChild(link);
-})();
+};

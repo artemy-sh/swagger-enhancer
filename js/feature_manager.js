@@ -37,7 +37,6 @@
           enabled: false
         });
         
-        // console.log(`Feature '${name}' registered successfully`);
       } catch (error) {
         console.error(`Failed to register feature '${name}':`, error);
       }
@@ -52,27 +51,19 @@
         return;
       }
 
-      // console.log('FeatureManager: Initializing all features...');
       
       const initPromises = Array.from(this.features.values()).map(async (featureData) => {
         try {
-          // console.log(`FeatureManager: Initializing '${featureData.name}'...`);
           await featureData.instance.init();
           featureData.enabled = true;
-          // console.log(`FeatureManager: '${featureData.name}' initialized successfully`);
         } catch (error) {
           console.error(`FeatureManager: Failed to initialize '${featureData.name}':`, error);
           featureData.enabled = false;
         }
       });
 
-      const results = await Promise.allSettled(initPromises);
+      await Promise.allSettled(initPromises);
       this.initialized = true;
-      
-      const successCount = results.filter(result => result.status === 'fulfilled').length;
-      const failCount = results.filter(result => result.status === 'rejected').length;
-      
-      // console.log(`FeatureManager: Initialization complete. ${successCount} succeeded, ${failCount} failed out of ${this.features.size} total.`);
     }
 
     /**
@@ -92,7 +83,7 @@
      */
     isFeatureEnabled(name) {
       const featureData = this.features.get(name);
-      return featureData ? featureData.enabled : false;
+      return featureData ? featureData.instance.isEnabled() : false;
     }
 
     /**
@@ -111,8 +102,8 @@
       
       this.features.forEach((featureData) => {
         try {
-          if (featureData.instance.cleanup) {
-            featureData.instance.cleanup();
+          if (featureData.instance.destroy) {
+            featureData.instance.destroy();
           }
         } catch (error) {
           console.error(`Error cleaning up feature '${featureData.name}':`, error);
@@ -127,7 +118,5 @@
   // Create global instance
   window.SwaggerEnhancerFeatureManager = new FeatureManager();
 
-  // Expose to global scope for debugging
-  window.SwaggerEnhancerFeatureManager = window.SwaggerEnhancerFeatureManager;
 
 })();

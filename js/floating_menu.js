@@ -1,4 +1,4 @@
-(() => {
+window.createSwaggerFloatingMenu = () => {
   const id = 'swagger-floating-menu';
   if (document.getElementById(id)) return;
 
@@ -15,4 +15,4 @@
   container.appendChild(left);
   container.appendChild(right);
   document.body.prepend(container);
-})();
+};
