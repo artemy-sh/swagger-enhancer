@@ -1,0 +1,15 @@
+{
+  "name": "swagger-enhancer",
+  "version": "1.0.1",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "test:browser": "node --test tests/browser/*.test.cjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "jsdom": "26.1.0",
+    "swagger-ui-dist": "5.33.0",
+    "swagger-ui-legacy": "npm:swagger-ui-dist@4.19.1"
+  }
+}

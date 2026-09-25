@@ -9,3 +9,5 @@ Thumbs.db
 # Build
 *.log
 *.cache
+# Local test dependencies
+node_modules/
