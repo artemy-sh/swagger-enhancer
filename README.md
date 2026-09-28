@@ -5,7 +5,7 @@
 [![Chrome / Edge](https://img.shields.io/badge/platform-Chrome%20%7C%20Edge-blue)](#installation)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![UI Enhancer](https://img.shields.io/badge/type-Swagger%20UI%20enhancer-orange)](#features)
-[![Version](https://img.shields.io/badge/version-1.0.1-lightgrey)](#testing)
+[![Version](https://img.shields.io/badge/version-2.0.0-lightgrey)](#testing)
 
 #### Table of Contents
 
@@ -158,11 +158,13 @@ npx playwright install chromium
 npm run test:browser
 ```
 
-`npm test` runs 53 tests in Node without starting a browser: DOM regressions with mocked Chrome APIs and integration tests using real Swagger UI 4/5 selectors against a 400-operation specification. Coverage includes favorites modes and bulk selection, full-spec search and navigation, cache invalidation, authorization privacy and opt-in behavior, icon spacing, popup persistence failures, schemas, live responses, scrolling, and initialization/cleanup races.
+`npm test` runs 59 tests in Node without starting a browser: DOM regressions with mocked Chrome APIs and integration tests using real Swagger UI 4/5 selectors against a 400-operation specification. Coverage includes favorites modes and bulk selection, full-spec search and navigation, cache invalidation, authorization privacy and opt-in behavior, icon spacing, popup persistence failures, schemas, live responses, scrolling, and initialization/cleanup races.
 
 `npm run test:browser` is a separate, optional suite. It loads the actual extension in a temporary Chromium profile against a local Swagger UI and API fixture. It checks popup toggles, cross-tab settings, favorites persistence, search, schemas, Execute responses, and scroll-to-top. A 400-operation / 20-tag scenario checks virtualization, offscreen favorites, filter modes, select-all, and reset. No production API is called. Node tests do not verify actual browser layout or scrolling geometry.
 
 The browser suite uses the pinned Swagger UI 4 and 5 versions in `package-lock.json`; it does not guarantee compatibility with every Swagger UI customization or older browser. Set `SWAGGER_TEST_CHROMIUM` to use an existing compatible Chromium executable.
+
+On older Swagger builds without React Hooks/Context, incompatible UI enhancements are skipped. Component error boundaries restore the original Swagger component if an enhancement fails, and a failed favorites transformation returns the original operation list. The documentation remains usable without those enhancements; this does not repair errors in Swagger itself or in the API specification.
 
 For the standard SwaggerUIBundle build, favorites filter the Swagger data through a plugin before list rendering, including virtualized lists. The js/favorites_bridge.js adapter also supplies the search index from the filtered specification and navigates via Swagger layout actions. It runs in the page MAIN world without Chrome API access. Custom builds that do not expose SwaggerUIBundle retain the DOM fallback, which can only search mounted routes and does not support virtualized lists.
 

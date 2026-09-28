@@ -11,3 +11,5 @@ Thumbs.db
 *.cache
 # Local test dependencies
 node_modules/
+# Release archives
+/dist/
