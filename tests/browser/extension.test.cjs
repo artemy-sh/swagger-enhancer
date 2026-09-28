@@ -117,7 +117,8 @@ test(`installed MV3 extension with ${swaggerPackage}: popup, settings sync, favo
   await headerAuth.click();
   const authDialog = page.locator('.dialog-ux');
   await expect(authDialog).toBeVisible();
-  assert.equal(await page.evaluate(() => scrollY), 600, 'Header opens auth without scrolling to the original button');
+  // Ignore one pixel of layout rounding while still catching a jump to the source button.
+  assert.ok(Math.abs(await page.evaluate(() => scrollY) - 600) <= 1, 'Header opens auth without scrolling to the original button');
   await authDialog.locator('input').fill('local-fixture-token');
   await authDialog.getByRole('button', { name: /^(Authorize|Apply credentials)$/ }).click();
   await expect(headerAuth).toHaveClass(/is-authorized/);

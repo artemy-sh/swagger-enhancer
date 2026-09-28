@@ -7,13 +7,24 @@ const root = path.resolve(__dirname, '..');
 const pause = () => new Promise(resolve => setTimeout(resolve, 0));
 
 // Real Swagger selectors, Immutable values and plugin registration, without a
-// browser, HTTP requests or React rendering. Layout is covered by the opt-in E2E suite.
-function setup(t, pkg) {
-  const dom = new JSDOM('<div class="swagger-ui"></div>', {
+// browser or HTTP requests. Some cases mount React in jsdom to exercise recovery;
+// actual layout is covered by the separate E2E suite.
+function setup(t, pkg, options = {}) {
+  const dom = new JSDOM('<div id="test-swagger" class="swagger-ui"></div>', {
     url: 'https://example.test/docs', runScripts: 'outside-only', pretendToBeVisual: true
   });
   const w = dom.window, d = w.document, features = [], errors = [];
-  w.addEventListener('error', event => errors.push(event.message));
+  w.scrollTo = () => {}; // jsdom has no layout/scrolling implementation.
+  w.addEventListener('error', event => {
+    if (options.expectedError && event.message.includes(options.expectedError)) event.preventDefault();
+    else errors.push(event.message);
+  });
+  const warnings = [];
+  w.console.warn = message => warnings.push(message);
+  if (options.expectedError) w.console.error = (...args) => {
+    const message = args.map(String).join(' ');
+    if (!message.includes(options.expectedError) && !message.includes('The above error occurred')) errors.push(message);
+  };
   w.chrome = { runtime: { getURL: p => `chrome-extension://test/${p}` } };
   const load = name => w.eval(fs.readFileSync(path.join(root, 'js', name + '.js'), 'utf8'));
   load('utils');
@@ -26,17 +37,19 @@ function setup(t, pkg) {
     const plugin = options.plugins.at(-1)();
     const afterLoad = plugin.afterLoad;
     plugin.afterLoad = value => { system = value; afterLoad(value); };
+    configurePlugin?.(plugin);
     return factory(options);
   };
   load('favorites_bridge');
+  const configurePlugin = options.configurePlugin;
   const paths = {};
-  for (let i = 0; i < 400; i++) paths[`/pets/${i}`] = { get: {
+  for (let i = 0; i < (options.render ? 2 : 400); i++) paths[`/pets/${i}`] = { get: {
     tags: ['Group ' + Math.floor(i / 20)], summary: 'Summary ' + i,
     description: 'Description marker' + i, operationId: 'readPet' + i,
     responses: { 200: { description: 'OK' } }
   } };
   const spec = { openapi: '3.0.0', info: { title: 'Regression', version: '1' }, paths };
-  w.SwaggerUIBundle({ spec, validatorUrl: null });
+  w.SwaggerUIBundle({ spec, validatorUrl: null, ...(options.render ? { dom_id: '#test-swagger' } : {}) });
   const send = (name, detail) => d.dispatchEvent(new w.CustomEvent('swagger-enhancer:' + name, { detail: JSON.stringify(detail) }));
   const entries = () => {
     let result;
@@ -48,12 +61,46 @@ function setup(t, pkg) {
     features.forEach(f => f.destroy()); await pause(); w.close();
     assert.deepEqual(errors, []);
   });
-  return { w, d, system, spec, send, entries, feature(name, className) {
+  return { w, d, system, spec, send, entries, warnings, feature(name, className) {
     load(name); const f = new w[className](); features.push(f); f.setEnabled(true); return f;
   } };
 }
 
 for (const pkg of ['swagger-ui-dist', 'swagger-ui-legacy']) {
+  test(`${pkg}: rendering survives a missing hooks/context API with all enhancements enabled`, async t => {
+    const { w, d } = setup(t, pkg, { render: true, configurePlugin(plugin) {
+      for (const [name, wrap] of Object.entries(plugin.wrapComponents)) {
+        plugin.wrapComponents[name] = (Original, system) => wrap(Original, { ...system, React: {
+          ...system.React, useRef: undefined, useState: undefined, useLayoutEffect: undefined,
+          createContext: undefined, useContext: undefined
+        } });
+      }
+    } });
+    for (const name of ['auth-ui', 'copy-url-ui']) d.dispatchEvent(new w.CustomEvent('swagger-enhancer:' + name, { detail: 'true' }));
+    for (let i = 0; i < 100 && d.querySelectorAll('.opblock').length !== 2; i++) await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal(d.querySelectorAll('.opblock').length, 2);
+    assert.doesNotMatch(d.body.textContent, /Could not render/);
+    d.querySelector('.opblock-summary-control').click();
+    await new Promise(resolve => setTimeout(resolve, 50));
+    assert.ok(d.querySelector('.opblock.is-open'));
+  });
+
+  test(`${pkg}: an enhancement render failure falls back to working native operations`, async t => {
+    const { d, warnings } = setup(t, pkg, { render: true, expectedError: 'injected extension render failure', configurePlugin(plugin) {
+      const wrap = plugin.wrapComponents.operations;
+      plugin.wrapComponents.operations = (Original, system) => wrap(Original, { ...system, React: {
+        ...system.React, useRef() { throw new Error('injected extension render failure'); }
+      } });
+    } });
+    for (let i = 0; i < 100 && d.querySelectorAll('.opblock').length !== 2; i++) await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal(d.querySelectorAll('.opblock').length, 2);
+    assert.doesNotMatch(d.body.textContent, /Could not render/);
+    assert.equal(warnings.filter(message => message.includes('keeping the native Swagger UI')).length, 1);
+    d.querySelector('.opblock-summary-control').click();
+    await new Promise(resolve => setTimeout(resolve, 50));
+    assert.ok(d.querySelector('.opblock.is-open'));
+  });
+
   test(`${pkg}: favorites filter the whole spec; all/reset and disable preserve source data`, async t => {
     const { w, d, system, send, entries, feature } = setup(t, pkg);
     const original = JSON.stringify(system.specSelectors.specJson().toJS());

@@ -2,6 +2,37 @@
 (() => {
   'use strict';
 
+  const warned = new Set();
+  const reportFallback = name => {
+    if (warned.has(name)) return;
+    warned.add(name);
+    console.warn(`[Swagger Enhancer] ${name} is unavailable; keeping the native Swagger UI.`);
+  };
+  const safeComponent = (name, required, enhance) => (Original, system) => {
+    const React = system?.React;
+    // Swagger UI 3 can ship React 15: even disabled features must not call hooks
+    // or createContext there. Return the exact original component before rendering.
+    if (!React || required.some(api => typeof React[api] !== 'function')) return Original;
+    let Enhanced;
+    try { Enhanced = enhance(Original, system); }
+    catch { reportFallback(name); return Original; }
+    if (typeof React.Component !== 'function') return Enhanced;
+    return class SwaggerEnhancerBoundary extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { failed: false };
+      }
+      static getDerivedStateFromError() { return { failed: true }; }
+      componentDidCatch() {
+        reportFallback(name);
+        this.setState({ failed: true });
+      }
+      render() {
+        return React.createElement(this.state.failed ? Original : Enhanced, this.props);
+      }
+    };
+  };
+
   // Swagger's original filled 20px lock silhouettes.
   const LOCK_PATH = 'M15.8 8H14V5.6C14 2.703 12.665 1 10 1 7.334 1 6 2.703 6 5.6V8H4c-.553 0-1 .646-1 1.199V17c0 .549.428 1.139.951 1.307l1.197.387C5.672 18.861 6.55 19 7.1 19h5.8c.549 0 1.428-.139 1.951-.307l1.196-.387c.524-.167.953-.757.953-1.306V9.199C17 8.646 16.352 8 15.8 8zM12 8H8V5.199C8 3.754 8.797 3 10 3c1.203 0 2 .754 2 2.199V8z';
   const UNLOCK_PATH = 'M15.8 8H14V5.6C14 2.703 12.665 1 10 1 7.334 1 6 2.703 6 5.6V6h2v-.801C8 3.754 8.797 3 10 3c1.203 0 2 .754 2 2.199V8H4c-.553 0-1 .646-1 1.199V17c0 .549.428 1.139.951 1.307l1.197.387C5.672 18.861 6.55 19 7.1 19h5.8c.549 0 1.428-.139 1.951-.307l1.196-.387c.524-.167.953-.757.953-1.306V9.199C17 8.646 16.352 8 15.8 8z';
@@ -153,11 +184,11 @@
     };
     return {
       wrapComponents: {
-        OperationSummary: (Original, { React }) => function SummaryWithCopyContext(props) {
+        OperationSummary: safeComponent('documentation links', ['createContext', 'useContext'], (Original, { React }) => function SummaryWithCopyContext(props) {
           return React.createElement(getOperationContext(React).Provider, { value: props.operationProps },
             React.createElement(Original, props));
-        },
-        CopyToClipboardBtn: (Original, { React }) => function CopyRouteLinks(props) {
+        }),
+        CopyToClipboardBtn: safeComponent('copy controls', ['createContext', 'useContext', 'useRef', 'useState', 'useLayoutEffect'], (Original, { React }) => function CopyRouteLinks(props) {
           const [feedback, setFeedback] = React.useState(null);
           const pending = React.useRef({ timer: null, request: 0 });
           const active = useCopyURL(React);
@@ -210,8 +241,8 @@
             docsURL ? copyButton('docs', docsURL, 'Copy documentation link', 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M8 13h8 M8 17h6') : null,
             copyButton('full', window.location.origin + path, 'Copy full URL to clipboard', 'M10 13a5 5 0 0 0 7 .3l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7-.3l-3 3a5 5 0 0 0 7 7l1.7-1.7'),
             native);
-        },
-        authorizeBtn: (Original, system) => function NativeAuthorization(props) {
+        }),
+        authorizeBtn: safeComponent('authorization button', ['useState', 'useLayoutEffect'], (Original, system) => function NativeAuthorization(props) {
           const { React } = system;
           if (!useAuthUI(React)) return React.createElement(Original, props);
           const { isAuthorized, onClick, showPopup, getComponent } = props;
@@ -225,8 +256,8 @@
               onClick, title: label, 'aria-label': label, 'aria-haspopup': 'dialog'
             }, authIcon(React, isAuthorized), React.createElement('span', null, label)),
             showPopup ? React.createElement(Popup, null) : null);
-        },
-        authorizeOperationBtn: (Original, { React }) => function RouteAuthorization(props) {
+        }),
+        authorizeOperationBtn: safeComponent('operation authorization', ['useState', 'useLayoutEffect'], (Original, { React }) => function RouteAuthorization(props) {
           if (!useAuthUI(React)) return React.createElement(Original, props);
           const { isAuthorized, onClick } = props;
           const label = isAuthorized ? 'Authorized' : 'Authorization required';
@@ -236,8 +267,8 @@
             'aria-label': label, title: label,
             onClick: event => { event.stopPropagation(); onClick?.(); }
           }, authIcon(React, isAuthorized));
-        },
-        operations: (Original, { React }) => function MeasuredOperations(props) {
+        }),
+        operations: safeComponent('virtual list measurement', ['useRef', 'useState', 'useLayoutEffect'], (Original, { React }) => function MeasuredOperations(props) {
           const root = React.useRef(null);
           const wasVirtual = React.useRef(null);
           const [generation, setGeneration] = React.useState(0);
@@ -252,7 +283,7 @@
           });
           return React.createElement('div', { ref: root },
             React.createElement(Original, { ...props, key: generation }));
-        }
+        })
       },
       statePlugins: {
         auth: {
@@ -272,17 +303,26 @@
             taggedOperations: original => (...args) => {
               // Swagger passes the spec state to selector wrappers, but the bound original takes no state argument.
               const source = original(...args.slice(1));
-              // Swagger may return a new Immutable map with identical contents.
-              if (lastRevision === revision && (source === lastSource || source.equals(lastSource))) return result;
-              lastSource = source;
-              lastRevision = revision;
-              if (!enabled || filterState === 0) return publishResult(source);
-              const favorites = readFavorites();
-              return publishResult(source.map(tag => tag.update('operations', operations => operations.filter(op => {
-                const key = `${String(op.get('method')).toUpperCase()} ${op.get('path')}`;
-                const favorite = favorites[key] === true;
-                return filterState === 1 ? favorite : !favorite;
-              }))).filter(tag => tag.get('operations').size > 0));
+              try {
+                // Swagger may return a new Immutable map with identical contents.
+                if (lastRevision === revision && (source === lastSource || source.equals(lastSource))) return result;
+                lastSource = source;
+                lastRevision = revision;
+                if (!enabled || filterState === 0) return publishResult(source);
+                const favorites = readFavorites();
+                return publishResult(source.map(tag => tag.update('operations', operations => operations.filter(op => {
+                  const key = `${String(op.get('method')).toUpperCase()} ${op.get('path')}`;
+                  const favorite = favorites[key] === true;
+                  return filterState === 1 ? favorite : !favorite;
+                }))).filter(tag => tag.get('operations').size > 0));
+              } catch {
+                // The extension must never turn an otherwise valid operation list
+                // into a render error when host selectors or Immutable APIs differ.
+                reportFallback('favorites filtering');
+                lastSource = source;
+                lastRevision = -1;
+                return (result = source);
+              }
             }
           }
         }

@@ -705,3 +705,32 @@ test('late clipboard results cannot restore feedback after disabling or unmounti
   dispose(); const beforeUnmount = statuses.length;
   finish(); await pending; assert.equal(statuses.length, beforeUnmount);
 });
+
+test('all component enhancements preserve native Swagger components without React hooks/context', t => {
+  const { w, d, load } = setup(t);
+  let plugin;
+  w.SwaggerUIBundle = options => { plugin = options.plugins.at(-1)(); };
+  load('favorites_bridge'); w.SwaggerUIBundle({});
+  for (const name of ['auth-ui', 'copy-url-ui']) {
+    d.dispatchEvent(new w.CustomEvent('swagger-enhancer:' + name, { detail: 'true' }));
+  }
+  const React = { createElement: () => assert.fail('unsupported enhancer attempted to render') };
+  const Original = () => 'Native Swagger';
+  for (const [name, wrap] of Object.entries(plugin.wrapComponents)) {
+    assert.equal(wrap(Original, { React }), Original, name);
+  }
+});
+
+test('favorites selector failure returns the unmodified host list and warns only once', t => {
+  const { w, d, load } = setup(t);
+  let plugin, warnings = 0;
+  w.console.warn = () => warnings++;
+  w.SwaggerUIBundle = options => { plugin = options.plugins.at(-1)(); };
+  load('favorites_bridge'); w.SwaggerUIBundle({});
+  d.dispatchEvent(new w.CustomEvent('swagger-enhancer:favorites-update', { detail: '{"enabled":true,"filterState":1}' }));
+  const source = { map() { throw new Error('incompatible host selector'); } };
+  let calls = 0;
+  const select = plugin.statePlugins.spec.wrapSelectors.taggedOperations(() => { calls++; return source; });
+  for (let i = 0; i < 5; i++) assert.equal(select({}), source);
+  assert.equal(calls, 5); assert.equal(warnings, 1);
+});
