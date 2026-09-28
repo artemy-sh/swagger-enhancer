@@ -60,7 +60,7 @@
           // Resolve again in case Swagger replaced its auth control since the last mutation.
           document.querySelector(SOURCE)?.click();
         });
-        menu.prepend(this.button);
+        menu.insertBefore(this.button, menu.querySelector('#swagger-search-container'));
       }
       document.getElementById('swagger-floating-menu').classList.add('swagger-auth-in-header');
       this.requestIdentity();
