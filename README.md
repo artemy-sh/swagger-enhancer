@@ -1,5 +1,13 @@
 # Swagger Enhancer
 
+[![English](https://img.shields.io/badge/lang-EN-red)](README.md)
+[![Русский](https://img.shields.io/badge/lang-RU-blue)](README_RU.md)
+[![JavaScript](https://img.shields.io/badge/javascript-ES6%2B-blue)](#development)
+[![Chrome / Edge / Yandex](https://img.shields.io/badge/platform-Chrome%20%7C%20Edge%20%7C%20Yandex-blue)](#requirements-and-privacy)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![UI Enhancer](https://img.shields.io/badge/type-Swagger%20UI%20enhancer-orange)](#features)
+[![Version](https://img.shields.io/badge/version-2.1.0-lightgrey)](CHANGELOG.md)
+
 [Русский](README_RU.md) | [Releases](https://github.com/artemy-sh/swagger-enhancer/releases) | [Changelog](CHANGELOG.md) | [Chrome Web Store](https://chromewebstore.google.com/detail/swagger-enhancer/dnadagbnobcgafbdebbabcgicfkpciam)
 
 A Chromium extension that makes Swagger UI easier to navigate. Settings sync between devices through Chrome Sync. See the changelog for release notes.
@@ -20,9 +28,6 @@ A Chromium extension that makes Swagger UI easier to navigate. Settings sync bet
 
 The header and popup also offer rating, sharing and GitHub issue links. The outline cat follows the pointer subtly and hops on hover. Animations respect reduced motion. Keyboard focus stays on individual controls.
 
-<details>
-<summary>Short feature demos</summary>
-
 **Light and dark themes**
 
 ![Switching between light and dark themes](docs/dark_theme.gif)
@@ -42,8 +47,6 @@ The header and popup also offer rating, sharing and GitHub issue links. The outl
 **Custom sites**
 
 ![Adding a custom documentation address and enabling the panel](docs/sites.gif)
-
-</details>
 
 ## Installation and use
 

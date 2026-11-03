@@ -1,5 +1,13 @@
 # Swagger Enhancer
 
+[![English](https://img.shields.io/badge/lang-EN-red)](README.md)
+[![Русский](https://img.shields.io/badge/lang-RU-blue)](README_RU.md)
+[![JavaScript](https://img.shields.io/badge/javascript-ES6%2B-blue)](#разработка)
+[![Chrome / Edge / Yandex](https://img.shields.io/badge/platform-Chrome%20%7C%20Edge%20%7C%20Yandex-blue)](#требования-и-данные)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![UI Enhancer](https://img.shields.io/badge/type-Swagger%20UI%20enhancer-orange)](#возможности)
+[![Version](https://img.shields.io/badge/version-2.1.0-lightgrey)](CHANGELOG.md)
+
 [English](README.md) | [Релизы](https://github.com/artemy-sh/swagger-enhancer/releases) | [История изменений](CHANGELOG.md) | [Chrome Web Store](https://chromewebstore.google.com/detail/swagger-enhancer/dnadagbnobcgafbdebbabcgicfkpciam)
 
 Расширение для Chromium, которое упрощает работу со Swagger UI. Настройки синхронизируются через Chrome Sync. Изменения версий перечислены в changelog.
@@ -20,9 +28,6 @@
 
 В шапке и настройках доступны оценка расширения, ссылка для коллег и обращение в GitHub. Контурный кот слегка следит за мышью и подпрыгивает при наведении. Учитывается уменьшение движения в системе. Клавиатурный фокус остаётся на отдельных элементах.
 
-<details>
-<summary>Короткие демонстрации возможностей</summary>
-
 **Светлая и тёмная темы**
 
 ![Переключение светлой и тёмной темы](docs/dark_theme.gif)
@@ -42,8 +47,6 @@
 **Свои адреса документации**
 
 ![Добавление адреса документации и включение панели](docs/sites.gif)
-
-</details>
 
 ## Установка и использование
 
