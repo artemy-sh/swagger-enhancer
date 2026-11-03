@@ -14,6 +14,7 @@
     constructor() {
       this.features = new Map();
       this.initialized = false;
+      this.generation = 0;
     }
 
     /**
@@ -52,6 +53,7 @@
       }
 
       
+      const generation = this.generation;
       const initPromises = Array.from(this.features.values()).map(async (featureData) => {
         try {
           await featureData.instance.init();
@@ -63,7 +65,15 @@
       });
 
       await Promise.allSettled(initPromises);
-      this.initialized = true;
+      if (generation === this.generation) this.initialized = true;
+    }
+
+    refreshSpec() {
+      this.features.forEach(({ instance }) => {
+        if (!instance.isEnabled()) return;
+        try { instance.onSpecChanged?.(); }
+        catch (error) { console.warn('Could not refresh Swagger enhancement:', error); }
+      });
     }
 
     /**
@@ -98,6 +108,7 @@
      * Cleanup all features
      */
     cleanup() {
+      this.generation++;
       console.log('Cleaning up FeatureManager...');
       
       this.features.forEach((featureData) => {

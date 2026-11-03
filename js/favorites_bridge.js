@@ -133,30 +133,73 @@
       }
     }
   };
-  const FAVORITES_KEY = 'swaggerFavorites';
   const refreshers = new Set();
   let enabled = false;
   let filterState = 0;
   let revision = 0;
 
-  const readFavorites = () => {
-    try {
-      const value = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '{}');
-      return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
-    } catch { return {}; }
-  };
+  let favorites = {};
+  const readFavorites = () => favorites;
 
   document.addEventListener(UPDATE, event => {
     let state;
     try { state = JSON.parse(event.detail); } catch { return; }
     if (!state || typeof state.enabled !== 'boolean' || ![0, 1, 2].includes(state.filterState)) return;
+    if (state.favorites && typeof state.favorites === 'object' && !Array.isArray(state.favorites)) {
+      favorites = Object.fromEntries(Object.entries(state.favorites).filter(([, value]) => value === true));
+    }
     enabled = state.enabled;
     filterState = state.filterState;
     revision++;
     refreshers.forEach(refresh => refresh());
   });
 
-  const plugin = () => {
+  let disposeBridge = () => {};
+  const plugin = options => {
+    let specSystem;
+    let schemaNavigation;
+    let selectedURL;
+    const disposers = [];
+    const listen = (name, handler) => {
+      document.addEventListener(name, handler);
+      disposers.push(() => document.removeEventListener(name, handler));
+    };
+    disposeBridge = () => {
+      specSystem?.layoutActions.clearScrollTo?.();
+      specSystem = null;
+      disposers.forEach(dispose => dispose());
+      cancelAnimationFrame(navigationFrame);
+    };
+    const scope = () => {
+      const url = selectedURL !== undefined ? selectedURL : (specSystem?.specSelectors?.url?.() || options.url);
+      if (url) {
+        try { const resolved = new URL(url, location.href); resolved.hash = ''; return `url:${resolved.href}`; }
+        catch { /* Inline/document fallback for non-URL configurations. */ }
+      }
+      const title = specSystem?.specSelectors?.specJson?.()?.getIn?.(['info', 'title']) || options.spec?.info?.title || '';
+      return `inline:${location.origin}${location.pathname}${location.search}:${title}`;
+    };
+    const publishScope = (changed = false) => {
+      if (!specSystem) return;
+      document.dispatchEvent(new CustomEvent('swagger-enhancer:spec-changed', {
+        detail: JSON.stringify({ scope: scope(), changed })
+      }));
+    };
+    const specChanged = original => (...args) => {
+      cancelAnimationFrame(navigationFrame);
+      // Swagger UI 4 calls its scroll ref with null while unmounting. A search
+      // target that was already mounted may otherwise leave a stale scroll key.
+      specSystem?.layoutActions.clearScrollTo?.();
+      const value = original(...args);
+      publishScope(true);
+      schemaNavigation?.refresh();
+      return value;
+    };
+    const urlChanged = original => (...args) => {
+      // An explicitly cleared URL selects an inline spec, not the initial URL.
+      selectedURL = args[0];
+      return specChanged(original)(...args);
+    };
     let operationContext;
     const getOperationContext = React => operationContext ||= React.createContext(null);
     const authChanged = original => (...args) => {
@@ -165,15 +208,19 @@
       return value;
     };
     let lastSource;
+    let lastNativeState;
     let lastRevision = -1;
     let result;
     let searchSource;
     let searchIndex;
     let notificationPending = false;
     let navigationFrame;
-    const publishResult = value => {
-      if (result && value.equals(result)) return result;
-      if (value !== result && !notificationPending) {
+    const publishResult = (value, nativeChanged = false) => {
+      const contentsChanged = !result || !value.equals(result);
+      if (!nativeChanged && !contentsChanged) return result;
+      // Native resolution needs a new React value even for equivalent data.
+      // Search metadata did not change, so keep its selected result intact.
+      if (contentsChanged && !notificationPending) {
         notificationPending = true;
         queueMicrotask(() => {
           notificationPending = false;
@@ -240,7 +287,7 @@
           return React.createElement(React.Fragment, null,
             docsURL ? copyButton('docs', docsURL, 'Copy documentation link', 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M8 13h8 M8 17h6') : null,
             copyButton('full', window.location.origin + path, 'Copy full URL to clipboard', 'M10 13a5 5 0 0 0 7 .3l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7-.3l-3 3a5 5 0 0 0 7 7l1.7-1.7'),
-            native);
+            copyButton('path', path, 'Copy path to clipboard', 'M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2 M8 2h8v4H8z'));
         }),
         authorizeBtn: safeComponent('authorization button', ['useState', 'useLayoutEffect'], (Original, system) => function NativeAuthorization(props) {
           const { React } = system;
@@ -299,22 +346,31 @@
           reducers: { SWAGGER_ENHANCER_FAVORITES_CHANGED: (state, action) => state.set('swaggerEnhancerFavoritesRevision', action.payload) }
         },
         spec: {
+          wrapActions: { updateJsonSpec: specChanged, updateUrl: urlChanged },
           wrapSelectors: {
             taggedOperations: original => (...args) => {
               // Swagger passes the spec state to selector wrappers, but the bound original takes no state argument.
               const source = original(...args.slice(1));
               try {
+                // A resolved operation can equal its raw definition. Swagger still
+                // needs a new selector value to replace its loading indicator and
+                // refresh parameters/responses when the underlying spec state changes.
+                const state = args[0];
+                // Swagger may create an equivalent namespace wrapper on every
+                // read. Track its actual spec data, not that temporary wrapper.
+                const nativeChanged = !lastNativeState || ['json', 'resolvedSubtrees'].some(key => state?.get(key) !== lastNativeState.get(key));
+                lastNativeState = state;
                 // Swagger may return a new Immutable map with identical contents.
-                if (lastRevision === revision && (source === lastSource || source.equals(lastSource))) return result;
+                if (!nativeChanged && lastRevision === revision && (source === lastSource || source.equals(lastSource))) return result;
                 lastSource = source;
                 lastRevision = revision;
-                if (!enabled || filterState === 0) return publishResult(source);
+                if (!enabled || filterState === 0) return publishResult(source, nativeChanged);
                 const favorites = readFavorites();
                 return publishResult(source.map(tag => tag.update('operations', operations => operations.filter(op => {
                   const key = `${String(op.get('method')).toUpperCase()} ${op.get('path')}`;
                   const favorite = favorites[key] === true;
                   return filterState === 1 ? favorite : !favorite;
-                }))).filter(tag => tag.get('operations').size > 0));
+                }))).filter(tag => tag.get('operations').size > 0), nativeChanged);
               } catch {
                 // The extension must never turn an otherwise valid operation list
                 // into a render error when host selectors or Immutable APIs differ.
@@ -328,13 +384,25 @@
         }
       },
       afterLoad(system) {
-        document.addEventListener(AUTH_REQUEST, () => {
+        specSystem = system;
+        schemaNavigation = window.SwaggerEnhancerSchemaNavigation?.attach(system);
+        disposers.push(() => schemaNavigation?.destroy());
+        listen('swagger-enhancer:detach', () => {
+          cancelAnimationFrame(navigationFrame);
+          schemaNavigation?.cancel();
+          system.layoutActions.clearScrollTo?.();
+        });
+        listen('swagger-enhancer:scope-request', () => publishScope());
+        publishScope();
+        listen(AUTH_REQUEST, () => {
           // Only expose identity while the opt-in authorization feature is enabled.
           const names = authUIEnabled ? authorizationNames(system) : [];
           document.dispatchEvent(new CustomEvent(AUTH_IDENTITY, { detail: JSON.stringify(names) }));
         });
-        refreshers.add(() => system.layoutActions.swaggerEnhancerFavoritesChanged(revision));
-        document.addEventListener(SEARCH_REQUEST, () => {
+        const refresh = () => system.layoutActions.swaggerEnhancerFavoritesChanged(revision);
+        refreshers.add(refresh);
+        disposers.push(() => refreshers.delete(refresh));
+        listen(SEARCH_REQUEST, () => {
           const source = system.specSelectors.taggedOperations();
           if (source !== searchSource) {
             const entries = [];
@@ -359,7 +427,7 @@
           }
           document.dispatchEvent(new CustomEvent(SEARCH_INDEX, { detail: searchIndex }));
         });
-        document.addEventListener(SEARCH_NAVIGATE, event => {
+        listen(SEARCH_NAVIGATE, event => {
           let target;
           try { target = JSON.parse(event.detail); } catch { return; }
           if (!target || !['route', 'tag'].includes(target.type) || typeof target.tag !== 'string') return;
@@ -404,20 +472,22 @@
               element.style.scrollMarginTop = `${header + 8}px`;
               element.scrollIntoView({ block: 'start', behavior: 'instant' });
               element.style.scrollMarginTop = previousMargin;
+              actions.clearScrollTo?.();
               return;
             }
             if (++attempts < 120) navigationFrame = requestAnimationFrame(settle);
+            else actions.clearScrollTo?.();
           };
           navigationFrame = requestAnimationFrame(settle);
         });
-        document.addEventListener(SELECT_ALL, () => {
+        listen(SELECT_ALL, () => {
           if (!enabled) return;
           system.specSelectors.taggedOperations();
-          const favorites = readFavorites();
+          const keys = [];
           lastSource?.forEach(tag => tag.get('operations').forEach(op => {
-            favorites[`${String(op.get('method')).toUpperCase()} ${op.get('path')}`] = true;
+            keys.push(`${String(op.get('method')).toUpperCase()} ${op.get('path')}`);
           }));
-          localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+          document.dispatchEvent(new CustomEvent('swagger-enhancer:favorites-selection', { detail: JSON.stringify(keys) }));
         });
         document.documentElement.dataset.swaggerFavoritesBridge = 'ready';
         document.dispatchEvent(new Event(READY));
@@ -431,7 +501,8 @@
       const options = args[0];
       if (!options || typeof options !== 'object') return Reflect.apply(target, receiver, args);
       // Swagger invokes plugin factories again for afterLoad; keep selector/cache state shared.
-      const favoritesPlugin = plugin();
+      disposeBridge();
+      const favoritesPlugin = plugin(options);
       return Reflect.apply(target, receiver, [{ ...options, plugins: [...(options.plugins || []), () => favoritesPlugin] }, ...args.slice(1)]);
     }
   });

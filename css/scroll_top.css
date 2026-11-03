@@ -21,7 +21,7 @@
   align-items: center;
   justify-content: center;
   transition: all var(--se-transition-normal);
-  opacity: 0.4;
+  opacity: 0.85;
   box-shadow: var(--se-shadow-md);
   border: none;
   outline: none;
@@ -38,9 +38,12 @@
   box-shadow: var(--se-shadow-md);
 }
 
-.swagger-scroll-top:focus {
+.swagger-scroll-top:focus { opacity: 1; }
+
+body.swagger-keyboard-navigation .swagger-scroll-top:focus-visible {
   outline: 2px solid var(--se-primary);
   outline-offset: 2px;
+  animation: scroll-top-pulse 2s infinite;
 }
 
 /* ========================
@@ -50,7 +53,7 @@
 .swagger-scroll-top svg.top-arrow {
   width: 20px;
   height: 20px;
-  fill: var(--se-white) !important;
+  fill: #124d32 !important;
   transition: transform var(--se-transition-fast);
 }
 
@@ -64,10 +67,10 @@
 
 html.swagger-dark-theme .swagger-scroll-top {
   background-color: var(--se-success);
-  opacity: 0.3;
+  opacity: 0.85;
 }
 
-html.swagger-dark-theme .swagger-scroll-top:hover {
+html.swagger-dark-theme .swagger-scroll-top:is(:hover, :focus) {
   opacity: 1;
   background-color: var(--se-success);
 }
@@ -124,6 +127,9 @@ html.swagger-dark-theme .swagger-scroll-top:hover {
   .swagger-scroll-top:hover svg.top-arrow {
     transform: none;
   }
+  body.swagger-keyboard-navigation .swagger-scroll-top:focus-visible {
+    animation: none;
+  }
 }
 
 /* ========================
@@ -140,10 +146,6 @@ html.swagger-dark-theme .swagger-scroll-top:hover {
   100% {
     box-shadow: 0 0 0 0 rgba(73, 204, 144, 0);
   }
-}
-
-.swagger-scroll-top:focus {
-  animation: scroll-top-pulse 2s infinite;
 }
 
 /* ========================

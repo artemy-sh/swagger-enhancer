@@ -13,3 +13,4 @@ Thumbs.db
 node_modules/
 # Release archives
 /dist/
+/demo-output/

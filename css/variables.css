@@ -41,14 +41,16 @@
   --se-success: #49cc90;
   --se-warning: #e6a318;
   --se-error: #f93e3e;
+  --se-auth-required: #b42318;
+  --se-auth-authorized: #16794a;
   --se-info: #61affe;
 
   /* === Favorites === */
-  --se-fav-default: #999;
-  --se-fav-active: #edc500;
-  --se-fav-exclude: #e74c3c;
+  --se-fav-default: #626a73;
+  --se-fav-active: #8a6200;
+  --se-fav-exclude: #bf3026;
   --se-fav-border-default: #d4d4d4;
-  --se-fav-border-active: #ffd700;
+  --se-fav-border-active: #8a6200;
 
   /* === Typography === */
   --se-font-family: Arial, sans-serif;
@@ -97,7 +99,7 @@
   --se-search-max-results: 10;
 
   /* === Popup Variables === */
-  --se-popup-width: 240px;
+  --se-popup-width: 320px;
   --se-popup-padding: var(--se-space-lg);
 
   /* === Scroll Top Variables === */
@@ -116,6 +118,12 @@
 /* === Dark Theme Overrides === */
 html.swagger-dark-theme,
 .swagger-dark-theme {
+  --se-auth-required: #f93e3e;
+  --se-auth-authorized: #49cc90;
+  --se-fav-default: #999;
+  --se-fav-active: #edc500;
+  --se-fav-exclude: #e74c3c;
+  --se-fav-border-active: #ffd700;
   --se-menu-bg: var(--se-dark-surface);
   --se-menu-text: var(--se-dark-text);
   --se-menu-shadow: var(--se-shadow-dark);

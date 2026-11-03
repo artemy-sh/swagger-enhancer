@@ -1,0 +1,16 @@
+#swagger-schema-notice {
+  position: fixed;
+  top: calc(var(--se-menu-height) + 12px);
+  right: 16px;
+  z-index: var(--se-z-tooltip);
+  max-width: min(360px, calc(100vw - 56px));
+  padding: 10px 12px;
+  border: 1px solid #ccd5df;
+  border-radius: 6px;
+  background: #f7f9fc;
+  color: #354355;
+  box-shadow: var(--se-shadow-md);
+  font: 12px/18px var(--se-font-family);
+  overflow-wrap: anywhere;
+}
+html.swagger-dark-theme #swagger-schema-notice { background: #252a30; border-color: #46515e; color: #e0e0e0; }

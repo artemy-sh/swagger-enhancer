@@ -43,10 +43,12 @@
       if (this.button || document.getElementById(BUTTON_ID)) return;
 
       this.button = document.createElement('button');
+      this.button.type = 'button';
       this.button.id = BUTTON_ID;
       this.button.className = 'swagger-scroll-top';
       this.button.title = 'Scroll to top';
       this.button.setAttribute('aria-label', 'Scroll to top');
+      this.button.setAttribute('aria-hidden', 'true');
       this.button.style.display = 'none';
 
       // SVG icon
@@ -112,13 +114,18 @@
     }
 
     /**
-     * Scroll to top with smooth animation
+     * Return to page top, respecting reduced motion and Swagger virtualization
      */
     scrollToTop() {
+      if (!this.enabled || !this.button?.isConnected) return;
       try {
+        // Swagger's window virtualizer corrects measured row heights while
+        // scrolling. Those corrections cancel a native smooth-scroll animation.
+        const instant = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ||
+          !!document.querySelector('.swagger-ui .operations-virtual');
         window.scrollTo({ 
           top: 0, 
-          behavior: 'smooth' 
+          behavior: instant ? 'instant' : 'smooth'
         });
       } catch (error) {
         // Fallback for older browsers

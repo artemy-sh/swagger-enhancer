@@ -1,191 +1,95 @@
-### Swagger Enhancer
+# Swagger Enhancer
 
-[![Lang: EN](https://img.shields.io/badge/lang-EN-red)](README.md)
-[![JavaScript](https://img.shields.io/badge/javascript-ES6%2B-blue)](#requirements)
-[![Chrome / Edge](https://img.shields.io/badge/platform-Chrome%20%7C%20Edge-blue)](#installation)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![UI Enhancer](https://img.shields.io/badge/type-Swagger%20UI%20enhancer-orange)](#features)
-[![Version](https://img.shields.io/badge/version-2.0.0-lightgrey)](#testing)
+[Русский](README_RU.md) | [Releases](https://github.com/artemy-sh/swagger-enhancer/releases) | [Changelog](CHANGELOG.md) | [Chrome Web Store](https://chromewebstore.google.com/detail/swagger-enhancer/dnadagbnobcgafbdebbabcgicfkpciam)
 
-#### Table of Contents
+A Chromium extension that makes Swagger UI easier to navigate. Settings sync between devices through Chrome Sync. See the changelog for release notes.
 
-* [Features](#features)
-* [Requirements](#requirements)
-* [Installation](#installation)
-  * [Install from Chrome Web Store](#install-from-chrome-web-store)
-  * [Manual Installation](#manual-installation)
-* [Quick Start](#quick-start)
-* [Architecture](#architecture)
-* [Testing](#testing)
-* [Contact](#contact)
-* [Bug Reporting](#bug-reporting)
-* [License](#license)
+## Features
 
----
+| Setting | What it does |
+| --- | --- |
+| Dark Theme | Switch between light and dark themes without reloading. |
+| Search | Search tags, paths, methods, descriptions and operation IDs across the full specification, including offscreen operations. Respects the favorites filter. |
+| Favorites | Save endpoints per specification, show or exclude favorites, select all or reset. Updates across tabs for the same specification. |
+| Authorize in header | Open Swagger's authorization dialog from the fixed header. Buttons and route locks reflect authorization state. |
+| Copy full URL | Copy an operation's documentation link, page origin + route path, or path alone, with confirmation. |
+| Scroll to Top | Return to the top, including long virtualized lists. |
+| Hide responses | Hide documented response tables while keeping executed requests and their live responses visible. |
+| Collapse schemas | Collapse Schemas by default. Explicit links reveal and expand the requested model, including models outside the viewport. |
+| Schema preview | Inspect fields, types, required properties, descriptions and references in a card next to a schema link. Includes Back and Open in Schemas. |
 
-**Swagger Enhancer** is a browser extension for Chromium-based browsers (Chrome, Edge, Yandex Browser, etc.) that improves the Swagger UI interface.
+The header and popup also offer rating, sharing and GitHub issue links. The outline cat follows the pointer subtly and hops on hover. Animations respect reduced motion. Keyboard focus stays on individual controls.
 
-Adds dark theme, endpoint search, favorites management, response/schema hiding, and scroll-to-top button. Uses Manifest V3, settings sync via `chrome.storage.sync`.
+<details>
+<summary>Short feature demos</summary>
 
----
+**Light and dark themes**
 
-### Features
+![Switching between light and dark themes](docs/dark_theme.gif)
 
-* **Dark Mode**
-  Toggle between light and dark themes without refreshing the page.
+**Search across the full specification**
 
-  ![Demo](docs/dark_theme.gif)
+![Searching and opening an offscreen operation](docs/search.gif)
 
-* **Search**
-  Search all tags and operations in the specification, including collapsed groups and offscreen routes, within the current favorites filter. Matches paths, HTTP methods, summaries, descriptions, and operation IDs; selecting a result opens its group/operation and scrolls to it. The dropdown shows the ten best matches.
+**Favorites**
 
-  ![Demo](docs/search.gif)
+![Showing, excluding and resetting the favorites filter](docs/favorites.gif)
 
-* **Favorites**
-  Save frequently used API methods to a favorites list.
-  You can also exclude methods to focus only on the relevant ones.
+**Schema preview**
 
-  ![Demo](docs/favorites.gif)
+![Inspecting a schema, following a reference and going back](docs/schema_preview.gif)
 
-* **Scroll to Top**
-  Quickly scroll to the top of the page — especially helpful with long specs.
+**Custom sites**
 
-* **Copy full URL**
-  Enable `Copy full URL` in the extension settings (off by default). Two buttons appear to the left of Swagger's copy-path control: a document icon copies a link to the operation's documentation (`docs#/tag/operationId`), and a link icon copies the current page origin (protocol, host and port) plus the route path, preserving placeholders such as `{id}`. Successful copying turns the button blue and shows “Copied!” for two seconds. Controls appear on route hover or keyboard focus; the original control still copies only the path. Available with the standard SwaggerUIBundle adapter.
+![Adding a custom documentation address and enabling the panel](docs/sites.gif)
 
-* **Authorize in header**
-  Open Swagger's standard authorization dialog from the fixed header, at any scroll position. Enable `Authorize in header` in the extension settings (off by default). Both the original Swagger button and the header shortcut are red before authorization and green afterwards, labelled `Authorized: client_id` (or username when available); without an identifier it shows `Authorized`. The shortcut appears only when the API offers authorization. Operation locks are closed/red when unauthorized and open/green when authorized for that operation. All these changes are controlled by the same setting; disabling it restores the original Swagger authorization buttons and icons.
+</details>
 
-* **Hide Standard Responses**
-  Automatically hides typical HTTP responses (`200`, `400`, `404`, etc.) to reduce clutter.
+## Installation and use
 
-* **Collapse Schemas**
-  Automatically collapses the `Schemas` block to keep the UI compact.
+Install from [Chrome Web Store](https://chromewebstore.google.com/detail/swagger-enhancer/dnadagbnobcgafbdebbabcgicfkpciam). For manual installation, extract the ZIP from [GitHub Releases](https://github.com/artemy-sh/swagger-enhancer/releases), open `chrome://extensions`, enable Developer Mode and choose **Load unpacked** with the extracted folder. Store updates become available after review.
 
-* **Persistent Settings**
-  Settings sync via `chrome.storage.sync` and auto-apply.
+1. Open a Swagger UI page and click the extension icon.
+2. Enable the features you need. Search, Favorites and Scroll to Top are enabled on a fresh installation. Other switches are off by default.
+3. Feature changes save automatically and apply to enabled Swagger tabs. After updating the extension itself, reload the documentation page.
 
----
+Search supports Up/Down, Enter and Escape. Schema cards close with Escape or a click outside. Ctrl/Meta-click keeps normal schema-link behavior.
 
-### Requirements
+### Sites
 
-* **Browser**: Chrome, Edge, Yandex Browser, or any Chromium-based browser
-* **Chromium Version**: 88+ (Manifest V3, `chrome.storage.sync`)
-* **Swagger UI**: Pages with `/docs`, `/swagger`, `/api-docs`, `/openapi` patterns
+Open **Sites** to edit where the panel appears. Standard `/docs`, `/swagger` and `/openapi` rules are prefilled as removable tags. Add domains, URL prefixes or wildcard patterns, separated by commas:
 
----
-
-### Installation
-
-#### Install from Chrome Web Store
-
-> [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Install-blue?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/swagger-enhancer/dnadagbnobcgafbdebbabcgicfkpciam)
-> 
-> Visit the [Chrome Web Store page](https://chromewebstore.google.com/detail/swagger-enhancer/dnadagbnobcgafbdebbabcgicfkpciam) and click **Add to Chrome**.
-> The extension will be installed and the icon will appear in your browser toolbar.
-
-#### Manual Installation
-
-1. Clone the repository or download the archive:
-
-   ```bash
-   git clone https://github.com/artemy-sh/swagger-enhancer.git
-   ```
-
-2. Open the extensions page:
-
-   * In Chrome, Yandex Browser, or Edge:
-     Enter `chrome://extensions/` in the address bar and press Enter.
-
-3. Enable **Developer Mode** (toggle in the top-right corner).
-
-4. Click **Load unpacked**.
-
-5. Select the `swagger-enhancer/` folder.
-
-6. The extension icon will appear in the toolbar — done!
-
----
-
-### Quick Start
-
-1. Open any page that uses **Swagger UI**.
-
-2. Click the **Swagger Enhancer** icon in your browser toolbar.
-
-3. In the popup, enable desired options:
-   `Dark Theme`, `Hide Schemas`, `Scroll to Top`, `Favorites`, etc.
-
-4. All settings are saved automatically and work on all Swagger UI tabs.
-
----
-
-### Architecture
-
-#### **Modular Structure**
-```
-swagger-enhancer/
-├── js/utils.js              # Shared utilities and BaseFeature class
-├── js/feature_manager.js    # Centralized feature management
-├── js/main.js              # Application entry point
-├── js/theme.js             # Dark theme feature
-├── js/search.js            # Endpoint search feature
-├── js/favorites.js         # Favorites management feature
-├── js/authorize.js         # Header authorization shortcut
-├── js/scroll_top.js        # Scroll to top feature
-├── js/hide_responses.js    # Hide responses feature
-├── js/hide_schemas.js      # Hide schemas feature
-├── js/github_link.js       # GitHub link feature
-├── js/floating_menu.js     # Floating menu feature
-└── css/variables.css       # Centralized CSS variables
+```text
+api.example.com, *.internal.example.com, http://localhost:8080/reference
 ```
 
-#### **Key Components**
+Choose **Save sites**, then reload the documentation. An empty list disables the panel everywhere. **Restore defaults** resets the draft, which must also be saved. Swagger UI must still be present, ordinary pages remain unchanged.
 
-* **`BaseFeature`** — unified base class for all features with lifecycle management
-* **`FeatureManager`** — centralized system for registering and managing features
-* **`SwaggerEnhancerUtils`** — shared utilities for storage, DOM, and messaging
-* **CSS Variables** — centralized theming system with dark mode support
+## Requirements and privacy
 
-### Testing
+- Chromium 111+ (Chrome, Edge, Yandex Browser and compatible browsers). Required by [MAIN-world manifest content scripts](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/content_scripts#browser_compatibility).
+- Tested with Swagger UI 4.19.1 and 5.33.0, OpenAPI 3.0/3.1, both themes and narrow screens. Full-spec filtering, copy controls and schema previews use the standard `SwaggerUIBundle` adapter. Custom builds retain a DOM fallback with search limited to mounted operations.
+- `storage` saves preferences, `scripting` registers scripts for custom sites using the existing host access. The extension does not collect analytics or send API data to developer servers. Favorites stay in the site's localStorage, schema previews use already loaded data. See the [privacy policy](privacy.md).
 
-Development only (Node.js 20.19+ and npm):
+## Development
+
+Run `npm run demo` for the local [Orbit Playground and film sources](demo/README.md) at http://localhost:4177/docs.
+
+Node.js 20.19+ and npm:
 
 ```bash
 npm ci
-npm test
 npx playwright install chromium
+npm test
 npm run test:browser
 ```
 
-`npm test` runs 59 tests in Node without starting a browser: DOM regressions with mocked Chrome APIs and integration tests using real Swagger UI 4/5 selectors against a 400-operation specification. Coverage includes favorites modes and bulk selection, full-spec search and navigation, cache invalidation, authorization privacy and opt-in behavior, icon spacing, popup persistence failures, schemas, live responses, scrolling, and initialization/cleanup races.
+Node tests cover feature behavior, failure recovery and real Swagger selectors. Browser tests load the actual extension in temporary Chromium profiles and check both themes, popup sizing, mouse/keyboard focus, cross-tab settings, copy controls, authorization, schemas, site rules and large virtualized specifications. Only local fixtures and a test GET are used. Set `SWAGGER_TEST_CHROMIUM` to use another compatible Chromium executable.
 
-`npm run test:browser` is a separate, optional suite. It loads the actual extension in a temporary Chromium profile against a local Swagger UI and API fixture. It checks popup toggles, cross-tab settings, favorites persistence, search, schemas, Execute responses, and scroll-to-top. A 400-operation / 20-tag scenario checks virtualization, offscreen favorites, filter modes, select-all, and reset. No production API is called. Node tests do not verify actual browser layout or scrolling geometry.
+Run `npm run package` to build the versioned ZIP and SHA-256 checksum in `dist/`. The package includes the runtime, license and privacy policy, excluding tests, dependencies, demos and development scripts. Versions and runtime file references are checked before packaging. See [release materials](docs/RELEASE.md) for store descriptions and submission details.
 
-The browser suite uses the pinned Swagger UI 4 and 5 versions in `package-lock.json`; it does not guarantee compatibility with every Swagger UI customization or older browser. Set `SWAGGER_TEST_CHROMIUM` to use an existing compatible Chromium executable.
+## Feedback
 
-On older Swagger builds without React Hooks/Context, incompatible UI enhancements are skipped. Component error boundaries restore the original Swagger component if an enhancement fails, and a failed favorites transformation returns the original operation list. The documentation remains usable without those enhancements; this does not repair errors in Swagger itself or in the API specification.
+[Report a bug or suggest a feature](https://github.com/artemy-sh/swagger-enhancer/issues) | [Rate the extension](https://chromewebstore.google.com/detail/swagger-enhancer/dnadagbnobcgafbdebbabcgicfkpciam/reviews)
 
-For the standard SwaggerUIBundle build, favorites filter the Swagger data through a plugin before list rendering, including virtualized lists. The js/favorites_bridge.js adapter also supplies the search index from the filtered specification and navigates via Swagger layout actions. It runs in the page MAIN world without Chrome API access. Custom builds that do not expose SwaggerUIBundle retain the DOM fallback, which can only search mounted routes and does not support virtualized lists.
-
-Tests are not injected into visited pages. Before creating a store upload, include only extension runtime files (`manifest.json`, `popup.html`, `js/`, `css/`, `assets/`), excluding `js/test_runner.js` and `js/page_test_functions.js`. Do not include `node_modules/` or `tests/`. The manifest version must be increased for a new store release.
-
----
-
-### Contact
-
-* **Author**: Artemy Shalygin
-* **Email**: [artemy.sh@gmail.com](mailto:artemy.sh@gmail.com)
-* **Telegram**: [@artemy\_sh](https://t.me/artemy_sh)
-
----
-
-### Bug Reporting
-
-Found a bug or have a suggestion? Please create an [issue](https://github.com/artemy-sh/swagger-enhancer/issues)
-
----
-
-### License
-
-[MIT License](/LICENSE)
+Author: [Artemy Shalygin](mailto:artemy.sh@gmail.com). [MIT License](LICENSE).

@@ -15,6 +15,7 @@ function setup(t, html = '', settings = {}, url = 'https://example.test/docs') {
   t.after(async () => {
     instances.forEach(instance => instance.destroy());
     if (dom.window.SwaggerEnhancerFeatureManager?.features.size) dom.window.SwaggerEnhancerFeatureManager.cleanup();
+    w.SwaggerEnhancerMascot?.destroyAll();
     await pause(0);
     dom.window.close();
     assert.deepEqual(errors, [], 'unexpected DOM errors');
@@ -24,7 +25,10 @@ function setup(t, html = '', settings = {}, url = 'https://example.test/docs') {
   w.chrome = { runtime: { getURL: p => `chrome-extension://test/${p}`, onMessage: event() }, storage: { onChanged: event(), sync: { get(keys, cb) { cb(Object.fromEntries(keys.filter(k => k in settings).map(k => [k, settings[k]]))); } } } };
   const load = name => w.eval(fs.readFileSync(path.join(root, 'js', name + '.js'), 'utf8'));
   load('utils');
-  return { w, d: w.document, load, feature(name) { load(name); const key = { favorites: 'Favorites', search: 'Search', hide_responses: 'HideResponses', hide_schemas: 'HideSchemas', authorize: 'Authorize', copy_url: 'CopyURL', theme: 'Theme', scroll_top: 'ScrollTop' }[name]; const instance = new w[key + 'Feature'](); instances.push(instance); return instance; } };
+  load('site_rules');
+  load('favorites_store');
+  load('mascot');
+  return { w, d: w.document, load, feature(name) { load(name); const key = { favorites: 'Favorites', search: 'Search', hide_responses: 'HideResponses', hide_schemas: 'HideSchemas', schema_preview: 'SchemaPreview', authorize: 'Authorize', copy_url: 'CopyURL', theme: 'Theme', scroll_top: 'ScrollTop' }[name]; const instance = new w[key + 'Feature'](); instances.push(instance); return instance; } };
 }
 
 test('disabling favorites restores filtered endpoints and preserves page display styles', t => {
@@ -54,7 +58,7 @@ test('favorites follow a reused summary and stop enhancing after disable', async
   d.querySelector('.opblock-summary-path').textContent = '/users';
   await pause(0);
   d.querySelector('.swagger-fav-star').click();
-  assert.deepEqual(JSON.parse(w.localStorage.getItem('swaggerFavorites')), { 'GET /users': true });
+  assert.deepEqual(JSON.parse(JSON.stringify(w.SwaggerEnhancerFavoritesStore.getFavorites())), { 'GET /users': true });
   f.setEnabled(false);
   d.querySelector('.swagger-ui').insertAdjacentHTML('beforeend', route('/new'));
   await pause(0);
@@ -267,7 +271,7 @@ test('whole app leaves ordinary docs pages alone and initializes once when Swagg
   assert.equal(d.body.classList.contains('swagger-enhancer-active'), false);
   d.body.insertAdjacentHTML('beforeend', `<div class="swagger-ui">${route()}</div>`);
   await pause(150);
-  assert.equal(w.SwaggerEnhancerFeatureManager.getAllFeatures().size, 8);
+  assert.equal(w.SwaggerEnhancerFeatureManager.getAllFeatures().size, 9);
   assert.equal(d.querySelectorAll('#swagger-floating-menu').length, 1);
   assert.equal(d.querySelectorAll('.swagger-fav-star').length, 1);
   assert.ok(d.querySelector('#swagger-search-container'));
@@ -277,7 +281,7 @@ test('cleanup removes feature UI, styles and listeners across enable/disable cyc
   const { w, d, load } = setup(t, `<div class="swagger-ui">${route()}</div>`);
   load('feature_manager');
   const manager = w.SwaggerEnhancerFeatureManager;
-  for (const [file, name] of [['theme', 'Theme'], ['search', 'Search'], ['favorites', 'Favorites'], ['scroll_top', 'ScrollTop'], ['hide_responses', 'HideResponses'], ['hide_schemas', 'HideSchemas'], ['authorize', 'Authorize'], ['copy_url', 'CopyURL']]) {
+  for (const [file, name] of [['schema_preview', 'SchemaPreview'], ['theme', 'Theme'], ['search', 'Search'], ['favorites', 'Favorites'], ['scroll_top', 'ScrollTop'], ['hide_responses', 'HideResponses'], ['hide_schemas', 'HideSchemas'], ['authorize', 'Authorize'], ['copy_url', 'CopyURL']]) {
     load(file); manager.register(file, w[name + 'Feature']);
   }
   await manager.initAll();
@@ -347,6 +351,8 @@ test('scroll control handles threshold, keyboard and cancellation on disable', a
   const f = feature('scroll_top'); f.setEnabled(true);
   const button = d.querySelector('#swagger-scroll-top');
   assert.equal(button.style.display, 'none');
+  assert.equal(button.type, 'button');
+  assert.equal(button.getAttribute('aria-hidden'), 'true');
   w.scrollY = 150; w.dispatchEvent(new w.Event('scroll')); await pause(25);
   assert.equal(button.style.display, 'none');
   w.scrollY = 151; w.dispatchEvent(new w.Event('scroll')); await pause(25);
@@ -358,9 +364,18 @@ test('scroll control handles threshold, keyboard and cancellation on disable', a
   }
   button.click(); assert.equal(calls.length, 3);
   assert.equal(calls[0][0].top, 0);
+  d.body.insertAdjacentHTML('afterbegin', '<div class="swagger-ui"><div class="operations-virtual"></div></div>');
+  button.click();
+  assert.equal(calls.at(-1)[0].behavior, 'instant', 'virtual row measurements must not cancel the return to top');
+  d.querySelector('.swagger-ui').remove();
+  w.matchMedia = () => ({ matches: true });
+  button.click();
+  assert.equal(calls.at(-1)[0].behavior, 'instant', 'reduced motion must not trigger smooth scrolling');
   w.dispatchEvent(new w.Event('scroll')); f.setEnabled(false); await pause(25);
   assert.equal(d.querySelector('#swagger-scroll-top'), null);
   assert.equal(f.isVisible, false);
+  button.click();
+  assert.equal(calls.length, 5, 'a removed control must not start scrolling');
   f.setEnabled(true); assert.equal(d.querySelectorAll('#swagger-scroll-top').length, 1);
 });
 
@@ -406,9 +421,10 @@ test('search caps result count and cache while escaping all displayed metadata',
   assert.equal(f.searchCache.has('pets'), false);
 });
 
-test('every popup toggle persists its matching setting and message; failed writes revert', async t => {
+test('every popup toggle persists without tab messaging; failed writes revert', async t => {
   const { w, d, load } = setup(t, fs.readFileSync(path.join(root, 'popup.html'), 'utf8'));
-  const writes = [], messages = [];
+  const writes = [];
+  let tabAccesses = 0;
   let fail = false;
   w.console.error = () => {};
   w.chrome.storage.sync.set = (value, cb) => {
@@ -416,30 +432,29 @@ test('every popup toggle persists its matching setting and message; failed write
     else writes.push(value);
     cb(); delete w.chrome.runtime.lastError;
   };
-  w.chrome.tabs = { query: (_query, cb) => cb([{ id: 7 }]), sendMessage: (id, message, cb) => { assert.equal(id, 7); messages.push(message); cb(); } };
+  Object.defineProperty(w.chrome, 'tabs', { get() { tabAccesses++; throw new Error('Active tab has no receiver'); } });
   load('popup'); await pause(0);
   const config = [
-    ['toggle', 'darkThemeEnabled', 'TOGGLE_THEME'],
-    ['searchToggle', 'swaggerSearchEnabled', 'TOGGLE_SEARCH'],
-    ['favoritesToggle', 'swaggerFavoritesEnabled', 'TOGGLE_FAVORITES'],
-    ['scrollTopToggle', 'scrollTopEnabled', 'TOGGLE_SCROLL_TOP'],
-    ['hideResponsesToggle', 'hideResponsesEnabled', 'TOGGLE_HIDE_RESPONSES'],
-    ['hideSchemasToggle', 'hideSchemasEnabled', 'TOGGLE_HIDE_SCHEMAS'],
-    ['authorizeInHeaderToggle', 'authorizeInHeaderEnabled', 'TOGGLE_AUTHORIZE_IN_HEADER'],
-    ['copyFullUrlToggle', 'copyFullUrlEnabled', 'TOGGLE_COPY_FULL_URL']
+    ['toggle', 'darkThemeEnabled'],
+    ['searchToggle', 'swaggerSearchEnabled'],
+    ['favoritesToggle', 'swaggerFavoritesEnabled'],
+    ['scrollTopToggle', 'scrollTopEnabled'],
+    ['hideResponsesToggle', 'hideResponsesEnabled'],
+    ['hideSchemasToggle', 'hideSchemasEnabled'],
+    ['authorizeInHeaderToggle', 'authorizeInHeaderEnabled'],
+    ['copyFullUrlToggle', 'copyFullUrlEnabled']
   ];
-  for (const [id, key, type] of config) {
+  for (const [id, key] of config) {
     const toggle = d.getElementById(id); assert.equal(toggle.checked, false);
     toggle.checked = true; toggle.dispatchEvent(new w.Event('change')); await pause(0);
-    assert.equal(writes.at(-1)[key], true); assert.equal(messages.at(-1).type, type);
-    assert.equal(messages.at(-1).enabled, true);
+    assert.equal(writes.at(-1)[key], true);
   }
-  assert.equal(writes.length, 8); assert.equal(messages.length, 8);
+  assert.equal(writes.length, 8); assert.equal(tabAccesses, 0);
   fail = true;
   const toggle = d.getElementById('toggle'); toggle.checked = false; toggle.dispatchEvent(new w.Event('change')); await pause(0);
   assert.equal(toggle.checked, true);
   assert.equal(d.getElementById('container').classList.contains('dark'), true);
-  assert.equal(messages.length, 8);
+  assert.equal(tabAccesses, 0);
 });
 
 test('factory adapter preserves host options, statics, receiver and plugin instance', t => {
@@ -577,7 +592,7 @@ test('full URL setting is off by default and sync toggles restore the original c
   w.chrome.storage.onChanged.emit({ copyFullUrlEnabled: { newValue: true } }, 'sync');
   assert.equal(updates.at(-1), true);
   assert.equal(Component(props).children[0].type, 'button');
-  assert.ok(d.querySelector('link[href$="copy_url.css"]'));
+  assert.equal(d.querySelector('link[href$="copy_url.css"]'), null, 'route icon styles are loaded once by the manifest');
   w.chrome.runtime.onMessage.emit({ type: 'TOGGLE_COPY_FULL_URL', enabled: false });
   assert.equal(updates.at(-1), false);
   assert.equal(Component(props).type, Original);
@@ -596,7 +611,7 @@ test('full URL setting is off by default and sync toggles restore the original c
   assert.equal(Component(props).type, Original);
 });
 
-test('full URL copy sits before the native path control and preserves route templates and query', async t => {
+test('full URL and path copy preserve route templates and query', async t => {
   const { w, Component, Original, statuses } = copyURLControl(t);
   const copied = []; w.navigator.clipboard = { writeText: async text => copied.push(text) };
   let prevented = 0, stopped = 0;
@@ -605,7 +620,10 @@ test('full URL copy sits before the native path control and preserves route temp
     const tree = Component(props), [button, native] = tree.children;
     assert.equal(button.type, 'button'); assert.equal(button.props.type, 'button');
     assert.equal(button.props['aria-label'], 'Copy full URL to clipboard');
-    assert.equal(native.type, Original); assert.equal(native.props, props);
+    assert.equal(native.props['aria-label'], 'Copy path to clipboard');
+    await native.props.onClick({ preventDefault() {}, stopPropagation() {} });
+    assert.equal(copied.at(-1), path);
+    assert.equal(statuses.at(-1).kind, 'path');
     await button.props.onClick({ preventDefault: () => prevented++, stopPropagation: () => stopped++ });
     assert.equal(copied.at(-1), 'https://example.test' + path);
     assert.equal(statuses.at(-1).ok, true);
@@ -680,7 +698,9 @@ test('documentation copy uses the exact operation anchor and sits left of the fu
   const [docs, full, native] = Component(props).children;
   assert.match(docs.props.className, /swagger-copy-docs-url/);
   assert.match(full.props.className, /swagger-copy-full-url/);
-  assert.equal(native.type, Original);
+  assert.equal(native.props['aria-label'], 'Copy path to clipboard');
+  await native.props.onClick({ preventDefault() {}, stopPropagation() {} });
+  assert.equal(copied.at(-1), '/api/v1/common/init_data');
   await docs.props.onClick({ preventDefault() {}, stopPropagation() {} });
   assert.equal(copied.at(-1), 'https://example.test/docs#/init_data/init_data_get_api_v1_common_init_data_get');
   assert.match(Component(props).children[0].props.className, /is-copied/);
@@ -733,4 +753,441 @@ test('favorites selector failure returns the unmodified host list and warns only
   const select = plugin.statePlugins.spec.wrapSelectors.taggedOperations(() => { calls++; return source; });
   for (let i = 0; i < 5; i++) assert.equal(select({}), source);
   assert.equal(calls, 5); assert.equal(warnings, 1);
+});
+
+test('legacy favorites migrate once with their filter and keep a backup', t => {
+  const { w } = setup(t);
+  const store = w.SwaggerEnhancerFavoritesStore;
+  w.localStorage.setItem('swaggerFavorites', '{"GET /pets":true,"GET /ignored":false}');
+  w.localStorage.setItem('swaggerFavoritesFilterState', '2');
+  store.setScope('url:https://example.test/spec-a.json');
+  assert.equal(store.getFavorites()['GET /pets'], true);
+  assert.equal(store.getFilterState(), 2);
+  store.setScope('url:https://example.test/spec-b.json');
+  assert.equal(Object.keys(store.getFavorites()).length, 0);
+  assert.equal(store.getFilterState(), 0);
+  store.saveFavorites({ 'POST /pets': true });
+  store.setScope('url:https://example.test/spec-a.json');
+  assert.equal(store.getFavorites()['GET /pets'], true);
+  assert.equal(store.getFavorites()['POST /pets'], undefined);
+  assert.match(w.localStorage.getItem('swaggerFavorites'), /GET \/pets/);
+});
+
+test('favorites refresh stars and active filter on another tab storage event', t => {
+  const { w, d, feature } = setup(t, `<div class="swagger-ui">${route()}</div>`);
+  const f = feature('favorites'); f.setEnabled(true);
+  const store = w.SwaggerEnhancerFavoritesStore;
+  w.localStorage.setItem(store.keys().favorites, '{"GET /pets":true}');
+  w.localStorage.setItem(store.keys().filter, '1');
+  w.dispatchEvent(new w.StorageEvent('storage', { key: store.keys().favorites, storageArea: w.localStorage }));
+  assert.equal(d.querySelector('.swagger-fav-star').getAttribute('aria-pressed'), 'true');
+  assert.equal(d.querySelector('.swagger-fav-label').textContent, 'Show favorites');
+  assert.notEqual(d.querySelector('.opblock').style.display, 'none');
+  w.localStorage.removeItem(store.keys().favorites);
+  w.dispatchEvent(new w.StorageEvent('storage', { key: store.keys().favorites }));
+  assert.equal(d.querySelector('.opblock').style.display, 'none');
+  f.setEnabled(false);
+  w.localStorage.setItem(store.keys().filter, '2');
+  w.dispatchEvent(new w.StorageEvent('storage', { key: store.keys().filter }));
+  assert.equal(f.filterState, 1, 'disabled feature stops listening');
+});
+
+test('failed favorites writes leave UI and data unchanged and show a recoverable error', t => {
+  const { w, d, feature } = setup(t, `<div class="swagger-ui">${route()}</div>`);
+  const f = feature('favorites'); f.setEnabled(true);
+  const original = w.Storage.prototype.setItem;
+  w.Storage.prototype.setItem = () => { throw new w.DOMException('Full', 'QuotaExceededError'); };
+  d.querySelector('.swagger-fav-star').click();
+  assert.equal(d.querySelector('.swagger-fav-star').getAttribute('aria-pressed'), 'false');
+  assert.equal(d.querySelector('#swagger-fav-status').hidden, false);
+  d.querySelector('#swagger-fav-filter').click();
+  assert.equal(f.filterState, 0);
+  w.Storage.prototype.setItem = original;
+  d.querySelector('.swagger-fav-star').click();
+  assert.equal(d.querySelector('.swagger-fav-star').getAttribute('aria-pressed'), 'true');
+  assert.equal(d.querySelector('#swagger-fav-status').hidden, true);
+});
+
+test('denied site storage does not break favorites initialization or filtering', t => {
+  const { w, d, feature } = setup(t, `<div class="swagger-ui">${route()}</div>`);
+  Object.defineProperty(w, 'localStorage', { get() { throw new w.DOMException('Denied', 'SecurityError'); } });
+  const f = feature('favorites');
+  assert.doesNotThrow(() => f.setEnabled(true));
+  assert.equal(d.querySelector('#swagger-fav-status').hidden, false);
+  d.querySelector('.swagger-fav-star').click();
+  d.querySelector('.swagger-fav-all').click();
+  assert.equal(d.querySelector('.swagger-fav-star').textContent, '☆');
+});
+
+test('favorite controls are named native buttons outside Swagger collapse buttons', t => {
+  const { d, feature } = setup(t, `<div class="swagger-ui">${route()}</div>`);
+  feature('favorites').setEnabled(true);
+  const star = d.querySelector('.swagger-fav-star');
+  assert.equal(star.tagName, 'BUTTON');
+  assert.equal(star.closest('.opblock-summary-control'), null);
+  assert.match(star.getAttribute('aria-label'), /Add to favorites: GET \/pets/);
+  star.click();
+  assert.match(star.getAttribute('aria-label'), /Remove from favorites/);
+  for (const selector of ['.swagger-fav-label', '.swagger-fav-all', '.swagger-fav-reset']) {
+    assert.equal(d.querySelector(selector).tagName, 'BUTTON');
+  }
+});
+
+test('search arrows keep input focus, announce selection and Enter navigates without executing', t => {
+  const { w, d, feature } = setup(t, `<div class="swagger-ui">${route('/pets')}${route('/pets/1')}</div>`);
+  const f = feature('search'); f.setEnabled(true);
+  const input = d.querySelector('.swagger-search-input');
+  input.value = 'pets'; input.focus();
+  const press = key => input.dispatchEvent(new w.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+  press('ArrowDown');
+  assert.equal(d.activeElement, input);
+  assert.equal(input.getAttribute('aria-expanded'), 'true');
+  assert.equal(input.getAttribute('aria-activedescendant'), 'swagger-search-result-0');
+  press('ArrowUp');
+  assert.equal(input.getAttribute('aria-activedescendant'), 'swagger-search-result-1');
+  let target;
+  w.SwaggerEnhancerUtils.dom.smoothScrollToElement = el => { target = el; };
+  press('Enter');
+  assert.match(target.textContent, /\/pets\/1/);
+  assert.equal(input.getAttribute('aria-expanded'), 'false');
+  assert.equal(input.hasAttribute('aria-activedescendant'), false);
+  press('ArrowDown'); press('Escape');
+  assert.equal(d.activeElement, input);
+  assert.equal(input.value, '');
+  press('ArrowDown');
+  assert.equal(input.hasAttribute('aria-activedescendant'), false, 'empty search cannot select hidden stale results');
+});
+
+test('schema collapse follows replaced sections but allows users to reopen them', async t => {
+  const { d, feature } = setup(t, '<div class="swagger-ui"></div>');
+  const f = feature('hide_schemas'); f.setEnabled(true);
+  const mount = () => {
+    d.querySelector('.swagger-ui').innerHTML = '<section class="models is-open"><button class="models-control">Schemas</button></section>';
+    const section = d.querySelector('section');
+    section.querySelector('button').addEventListener('click', () => section.classList.toggle('is-open'));
+    return section;
+  };
+  let section = mount(); await pause(0);
+  assert.equal(section.classList.contains('is-open'), false);
+  section.querySelector('button').click(); await pause(0);
+  assert.equal(section.classList.contains('is-open'), true);
+  section = mount(); await pause(0);
+  assert.equal(section.classList.contains('is-open'), false);
+  f.setEnabled(false);
+  assert.equal(section.classList.contains('is-open'), true);
+});
+
+test('schema text links keep late models mounted even when Chromium strips the directive from location', async t => {
+  const { w, d, feature } = setup(t, '', { hideSchemasEnabled: true });
+  w.performance.getEntriesByType = () => [{ name: 'https://example.test/docs#:~:text=InitDataGetResponse,-Expand%20all' }];
+  const f = feature('hide_schemas'); await f.init();
+  d.body.innerHTML = '<section class="models is-open"><button class="models-control">Schemas</button></section>';
+  const section = d.querySelector('section');
+  section.querySelector('button').onclick = () => section.classList.toggle('is-open');
+  await pause(0);
+  f.onSpecChanged(); await pause(0);
+  assert.equal(section.classList.contains('is-open'), true);
+  assert.equal(section.dataset.collapsedByAddon, undefined);
+  section.querySelector('button').click(); await pause(0);
+  assert.equal(section.classList.contains('is-open'), false, 'manual collapse still works');
+  f.setEnabled(false);
+  assert.equal(section.classList.contains('is-open'), false, 'disable does not undo a manual collapse');
+});
+
+test('text navigation from a previous SPA address does not disable schema collapse on the next page', t => {
+  const { w, d, feature } = setup(t, '<section class="models is-open"><button class="models-control">Schemas</button></section>');
+  w.performance.getEntriesByType = () => [{ name: 'https://example.test/docs/old#:~:text=Pet' }];
+  const section = d.querySelector('section');
+  section.querySelector('button').onclick = () => section.classList.toggle('is-open');
+  const f = feature('hide_schemas'); f.setEnabled(true);
+  assert.equal(section.classList.contains('is-open'), false);
+});
+
+test('app cleans up when Swagger leaves an SPA and reinitializes on return without duplicate UI', async t => {
+  const { w, d, load } = setup(t, `<main><div class="swagger-ui">${route()}</div></main>`, {
+    swaggerSearchEnabled: true, swaggerFavoritesEnabled: true, darkThemeEnabled: true
+  });
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json')));
+  for (const file of manifest.content_scripts[0].js.slice(2)) load(path.basename(file, '.js'));
+  await pause(0);
+  for (let cycle = 0; cycle < 2; cycle++) {
+    d.querySelector('main').innerHTML = '<p>Another SPA page</p>';
+    await pause(0);
+    assert.equal(d.querySelector('#swagger-floating-menu'), null);
+    assert.equal(d.documentElement.classList.contains('swagger-dark-theme'), false);
+    assert.equal(w.chrome.storage.onChanged.listeners.size, 1, 'site policy remains subscribed between Swagger mounts');
+    d.querySelector('main').innerHTML = `<div class="swagger-ui">${route()}</div>`;
+    await pause(0);
+    assert.equal(d.querySelectorAll('#swagger-floating-menu').length, 1);
+    assert.equal(d.querySelectorAll('.swagger-fav-star').length, 1);
+    assert.equal(w.chrome.storage.onChanged.listeners.size, 10);
+  }
+});
+
+test('header review link is accessible, idempotent and opens the extension reviews without a referrer', t => {
+  const { w, d, load } = setup(t, '<div id="swagger-floating-menu"><div class="swagger-menu-right"></div></div>', {}, 'https://example.test/docs?token=private#operation');
+  load('extension_support');
+  w.createSwaggerSupportLink(); w.createSwaggerSupportLink();
+  const links = d.querySelectorAll('#swagger-extension-review');
+  assert.equal(links.length, 1);
+  assert.equal(links[0].href, 'https://chromewebstore.google.com/detail/swagger-enhancer/dnadagbnobcgafbdebbabcgicfkpciam/reviews');
+  assert.equal(links[0].target, '_blank');
+  assert.equal(links[0].rel, 'noopener noreferrer');
+  assert.match(links[0].getAttribute('aria-label'), /Rate Swagger Enhancer/);
+  assert.match(links[0].title, /rating.*future improvements/);
+  assert.equal(links[0].querySelector('.swagger-review-copy').textContent, 'Like it? Rate it');
+  assert.equal(links[0].querySelector('.swagger-review-action').textContent, 'Rate it');
+  assert.equal(links[0].querySelector('.swagger-review-action svg'), null);
+  assert.equal(d.querySelector('a[href*="github.com"]'), null);
+});
+
+test('sharing copies only the public store URL and never reads clipboard or documentation data', async t => {
+  const { w, d, load } = setup(t, fs.readFileSync(path.join(root, 'popup.html'), 'utf8'), {}, 'https://example.test/docs?token=private');
+  const copied = [];
+  Object.defineProperty(w.navigator, 'clipboard', { value: {
+    writeText: async value => copied.push(value),
+    readText() { assert.fail('must never read clipboard'); }
+  } });
+  load('extension_support');
+  const panel = d.querySelector('#swagger-support-panel');
+  w.SwaggerEnhancerSupport.initPopup(panel); w.SwaggerEnhancerSupport.initPopup(panel);
+  assert.equal(copied.length, 0, 'no unsolicited clipboard access');
+  d.querySelector('[data-support-share]').click(); await pause(0);
+  assert.deepEqual(copied, ['https://chromewebstore.google.com/detail/swagger-enhancer/dnadagbnobcgafbdebbabcgicfkpciam']);
+  assert.match(panel.querySelector('[role="status"]').textContent, /Link copied/);
+  assert.equal(panel.querySelector('[data-support-url]').hidden, true);
+  assert.equal(d.querySelector('[data-support-review]').target, '_blank');
+  assert.equal(d.querySelector('.swagger-support-issue').href, 'https://github.com/artemy-sh/swagger-enhancer/issues');
+});
+
+test('sharing failure offers a selected manual link and a later retry can succeed', async t => {
+  const { w, d, load } = setup(t, fs.readFileSync(path.join(root, 'popup.html'), 'utf8'));
+  let fail = true;
+  Object.defineProperty(w.navigator, 'clipboard', { value: { async writeText() { if (fail) throw new Error('denied'); } } });
+  load('extension_support');
+  const panel = d.querySelector('#swagger-support-panel');
+  w.SwaggerEnhancerSupport.initPopup(panel);
+  const button = panel.querySelector('[data-support-share]'); button.click(); await pause(0);
+  const link = panel.querySelector('[data-support-url]');
+  assert.equal(link.hidden, false);
+  assert.equal(d.activeElement, link);
+  assert.match(panel.querySelector('[role="status"]').textContent, /Copy unavailable/);
+  assert.equal(button.disabled, false);
+  fail = false; button.click(); await pause(0);
+  assert.equal(link.hidden, true);
+  assert.match(panel.querySelector('[role="status"]').textContent, /Link copied/);
+});
+
+function mascotEnvironment(t) {
+  const context = setup(t, '<a id="invite" href="#"><span id="cat"></span></a>');
+  const { w, d, load } = context;
+  const callbacks = new Set();
+  const reduced = { matches: false, addEventListener(_, fn) { callbacks.add(fn); }, removeEventListener(_, fn) { callbacks.delete(fn); } };
+  const pointer = { ...reduced, matches: true };
+  w.matchMedia = query => query.includes('reduced-motion') ? reduced : pointer;
+  const frames = [];
+  const cancelled = [];
+  w.requestAnimationFrame = fn => { frames.push(fn); return frames.length; };
+  w.cancelAnimationFrame = id => cancelled.push(id);
+  load('mascot');
+  const destroy = w.SwaggerEnhancerMascot.mount(d.querySelector('#cat'), d.querySelector('#invite'));
+  const cat = d.querySelector('.se-cat');
+  cat.getBoundingClientRect = () => ({ left: 100, top: 100, width: 40, height: 40 });
+  return { ...context, cat, destroy, frames, cancelled, reduced,
+    move(x, y) { d.dispatchEvent(new w.MouseEvent('pointermove', { clientX: x, clientY: y })); },
+    updateMedia() { callbacks.forEach(fn => fn()); }
+  };
+}
+
+test('mascot coalesces mouse movement, limits gaze and stops tracking after cleanup', t => {
+  const { d, cat, move, frames, destroy, cancelled } = mascotEnvironment(t);
+  assert.equal(frames.length, 0, 'no idle animation-frame loop');
+  for (let i = 0; i < 30; i++) move(3000 + i, -3000);
+  assert.equal(frames.length, 1, 'one update for a burst of mouse events');
+  frames[0]();
+  assert.ok(parseFloat(cat.style.getPropertyValue('--cat-look-x')) <= 2.2);
+  assert.ok(parseFloat(cat.style.getPropertyValue('--cat-look-x')) > 0);
+  assert.ok(parseFloat(cat.style.getPropertyValue('--cat-look-y')) >= -1.6);
+  d.dispatchEvent(new d.defaultView.Event('pointerleave'));
+  assert.equal(cat.style.getPropertyValue('--cat-look-x'), '0px');
+  move(200, 200);
+  destroy();
+  assert.ok(cancelled.includes(2), 'pending pointer frame cancelled');
+  move(200, 200);
+  assert.equal(frames.length, 2, 'listener detached after cleanup');
+});
+
+test('mascot finishes its hop after pointer leave and respects reduced motion immediately', t => {
+  const { w, d, cat, move, frames, reduced, updateMedia } = mascotEnvironment(t);
+  const invite = d.querySelector('#invite');
+  invite.dispatchEvent(new w.Event('pointerenter'));
+  assert.equal(cat.classList.contains('is-engaged'), true);
+  invite.dispatchEvent(new w.Event('pointerleave'));
+  assert.equal(cat.classList.contains('is-engaged'), true, 'finish the landing instead of snapping back');
+  const finish = new w.Event('animationend', { bubbles: true });
+  Object.defineProperty(finish, 'animationName', { value: 'se-cat-hop' });
+  cat.querySelector('.se-cat-pose').dispatchEvent(finish);
+  assert.equal(cat.classList.contains('is-engaged'), false);
+  invite.dispatchEvent(new w.Event('focusin'));
+  assert.equal(cat.classList.contains('is-engaged'), true, 'keyboard focus starts a fresh hop');
+  reduced.matches = true; updateMedia();
+  assert.equal(cat.classList.contains('is-engaged'), false);
+  invite.dispatchEvent(new w.Event('pointerenter'));
+  move(300, 300);
+  assert.equal(frames.length, 0);
+  assert.equal(cat.classList.contains('is-engaged'), false);
+  reduced.matches = false; updateMedia();
+  move(300, 300); assert.equal(frames.length, 1);
+});
+
+test('mascot does not react to touch movement or expose decorative SVG to accessibility tools', t => {
+  const { w, d, cat, frames } = mascotEnvironment(t);
+  const touch = new w.MouseEvent('pointermove', { clientX: 300, clientY: 300 });
+  Object.defineProperty(touch, 'pointerType', { value: 'touch' });
+  d.dispatchEvent(touch);
+  assert.equal(frames.length, 0);
+  assert.equal(cat.getAttribute('aria-hidden'), 'true');
+  assert.equal(cat.querySelector('svg').getAttribute('focusable'), 'false');
+});
+
+test('clicking a focused search result keeps the dropdown closed after focus returns', t => {
+  const { d, feature } = setup(t, `<div class="swagger-ui">${route()}</div>`);
+  const f = feature('search'); f.setEnabled(true);
+  const input = d.querySelector('.swagger-search-input');
+  input.value = 'pets'; input.focus();
+  const results = d.querySelector('.swagger-search-results');
+  const result = results.querySelector('li');
+  f.performSearch = () => assert.fail('returning focus must not start another search');
+  result.focus(); result.click();
+  assert.equal(d.activeElement, input);
+  assert.equal(results.style.display, 'none');
+  assert.equal(input.getAttribute('aria-expanded'), 'false');
+});
+
+test('favorites update every copy of an operation shown under multiple tags', async t => {
+  const { d, feature } = setup(t, `<div class="swagger-ui">${route()}${route()}</div>`);
+  feature('favorites').setEnabled(true);
+  const stars = [...d.querySelectorAll('.swagger-fav-star')];
+  stars[0].click(); await pause(0);
+  assert.deepEqual(stars.map(star => star.getAttribute('aria-pressed')), ['true', 'true']);
+  stars[1].click(); await pause(0);
+  assert.deepEqual(stars.map(star => star.getAttribute('aria-pressed')), ['false', 'false']);
+});
+
+test('existing scoped favorites remain readable when legacy migration cannot write', t => {
+  const { w } = setup(t);
+  const store = w.SwaggerEnhancerFavoritesStore;
+  w.localStorage.setItem('swaggerFavorites', '{"GET /old":true}');
+  w.localStorage.setItem(store.keys().favorites, '{"GET /saved":true}');
+  w.localStorage.setItem(store.keys().filter, '2');
+  w.Storage.prototype.setItem = () => { throw new w.DOMException('Full', 'QuotaExceededError'); };
+  assert.equal(store.getFavorites()['GET /saved'], true);
+  assert.equal(store.getFilterState(), 2);
+});
+
+test('popup disables settings until the initial read and during an in-flight save', async t => {
+  const { w, d, load } = setup(t, fs.readFileSync(path.join(root, 'popup.html'), 'utf8'));
+  let finishRead, finishWrite;
+  w.chrome.storage.sync.get = (_keys, cb) => { finishRead = cb; };
+  w.chrome.storage.sync.set = (_value, cb) => { finishWrite = cb; };
+  load('popup'); await pause(0);
+  const toggle = d.querySelector('#toggle');
+  assert.equal(toggle.disabled, true, 'pending initial state must not accept edits');
+  finishRead({ darkThemeEnabled: true }); await pause(0);
+  assert.equal(toggle.disabled, false); assert.equal(toggle.checked, true);
+  toggle.checked = false; toggle.dispatchEvent(new w.Event('change'));
+  assert.equal(toggle.disabled, true, 'prevent a second conflicting save');
+  finishWrite(); await pause(0);
+  assert.equal(toggle.disabled, false); assert.equal(toggle.checked, false);
+});
+
+test('mascot resumes after back-forward cache restore', t => {
+  const { w, d, cat, move, frames } = mascotEnvironment(t);
+  w.dispatchEvent(new w.PageTransitionEvent('pagehide', { persisted: true }));
+  move(300, 300); assert.equal(frames.length, 0);
+  w.dispatchEvent(new w.PageTransitionEvent('pageshow', { persisted: true }));
+  move(300, 300); assert.equal(frames.length, 1);
+  d.querySelector('#invite').dispatchEvent(new w.Event('pointerenter'));
+  assert.equal(cat.classList.contains('is-engaged'), true);
+});
+
+test('IME composition does not activate or select search results', t => {
+  const { w, d, feature } = setup(t, `<div class="swagger-ui">${route()}</div>`);
+  feature('search').setEnabled(true);
+  const input = d.querySelector('.swagger-search-input'); input.value = 'pets'; input.focus();
+  const arrow = new w.KeyboardEvent('keydown', { key: 'ArrowDown', isComposing: true, cancelable: true });
+  input.dispatchEvent(arrow);
+  assert.equal(arrow.defaultPrevented, false);
+  assert.equal(input.hasAttribute('aria-activedescendant'), false);
+});
+
+test('popup read failure leaves controls disabled, offers retry and restores saved values', async t => {
+  const { w, d, load } = setup(t, fs.readFileSync(path.join(root, 'popup.html'), 'utf8'));
+  let fail = true;
+  w.console.error = () => {};
+  w.chrome.storage.sync.get = (_keys, cb) => {
+    if (fail) w.chrome.runtime.lastError = { message: 'unavailable' };
+    cb({ darkThemeEnabled: true }); delete w.chrome.runtime.lastError;
+  };
+  load('popup'); await pause(0);
+  assert.equal(d.querySelector('#toggle').disabled, true);
+  assert.equal(d.querySelector('#swagger-settings-error').hidden, false);
+  assert.equal(d.querySelector('#swagger-settings-retry').hidden, false);
+  fail = false; d.querySelector('#swagger-settings-retry').click(); await pause(0);
+  assert.equal(d.querySelector('#toggle').disabled, false);
+  assert.equal(d.querySelector('#toggle').checked, true);
+  assert.equal(d.querySelector('#swagger-settings-error').hidden, true);
+  assert.equal(d.querySelector('#swagger-settings-retry').hidden, true);
+});
+
+test('DOM fallback favorites follow the new documentation address in an SPA', t => {
+  const { w, feature } = setup(t, `<div class="swagger-ui">${route()}</div>`);
+  const f = feature('favorites'); f.setEnabled(true);
+  f.saveFavoritesMap({ 'GET /pets': true }); f.setEnabled(false);
+  w.history.pushState({}, '', '/other/docs');
+  f.setEnabled(true);
+  assert.equal(Object.keys(f.getFavoritesMap()).length, 0);
+  f.setEnabled(false); w.history.replaceState({}, '', '/docs');
+});
+
+test('schema collapse catches late automatic opening, including class-only updates', async t => {
+  const { d, feature } = setup(t, '<section class="models"><button class="models-control">Schemas</button></section>');
+  const section = d.querySelector('section');
+  section.querySelector('button').onclick = () => section.classList.toggle('is-open');
+  const f = feature('hide_schemas'); f.setEnabled(true);
+  section.classList.add('is-open'); await pause(0);
+  assert.equal(section.classList.contains('is-open'), false, 'automatic opening after mounting must honor the setting');
+  section.querySelector('button').click(); await pause(0);
+  assert.equal(section.classList.contains('is-open'), true, 'an explicit user action can still open the section');
+});
+
+test('explicit schema-collapse toggle overrides a previous text-link landing', async t => {
+  const { w, d, feature } = setup(t, '<section class="models is-open"><button class="models-control">Schemas</button></section>');
+  w.performance.getEntriesByType = () => [{ name: 'https://example.test/docs#:~:text=Pet' }];
+  const section = d.querySelector('section');
+  section.querySelector('button').onclick = () => section.classList.toggle('is-open');
+  const f = feature('hide_schemas'); await f.init();
+  f.setEnabled(true); await pause(0);
+  assert.equal(section.classList.contains('is-open'), false);
+  d.dispatchEvent(new w.CustomEvent('swagger-enhancer:schema-opened', { detail: JSON.stringify({ name: 'Pet', collapsed: true }) }));
+  assert.match(d.querySelector('#swagger-schema-notice').textContent, /Opened Pet/);
+  f.setEnabled(false);
+  assert.equal(d.querySelector('#swagger-schema-notice'), null);
+});
+
+test('empty search results are explained without creating a selectable fake result', t => {
+  const { w, d, feature } = setup(t, `<div class="swagger-ui">${route('/pets')}</div>`);
+  const f = feature('search'); f.setEnabled(true);
+  const input = d.querySelector('.swagger-search-input');
+  const results = d.querySelector('.swagger-search-results');
+  input.value = 'missing'; f.performSearch('missing', results);
+  assert.equal(results.children.length, 0);
+  assert.equal(d.querySelector('.swagger-search-empty').hidden, false);
+  input.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'ArrowDown', cancelable: true }));
+  assert.equal(input.hasAttribute('aria-activedescendant'), false);
+  input.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+  assert.equal(d.querySelector('.swagger-search-empty').hidden, true);
+  input.value = 'pets'; f.performSearch('pets', results);
+  assert.equal(d.querySelector('.swagger-search-empty').hidden, true);
+  assert.equal(results.children.length, 1);
 });

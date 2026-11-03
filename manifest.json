@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
+  "minimum_chrome_version": "111",
   "name": "Swagger Enhancer",
-  "version": "2.0.0",
-  "description": "Enhances the Swagger UI experience with visual and usability improvements.",
+  "version": "2.1.0",
+  "description": "Dark theme, full-spec search, favorites and inline schema previews for Swagger UI.",
   "author": "Artemy Shalygin",
   "action": {
     "default_popup": "popup.html",
@@ -25,6 +26,8 @@
       ],
       "js": [
         "js/utils.js",
+        "js/site_rules.js",
+        "js/favorites_store.js",
         "js/feature_manager.js",
         "js/floating_menu.js",
         "js/theme.js",
@@ -33,9 +36,11 @@
         "js/scroll_top.js",
         "js/hide_responses.js",
         "js/hide_schemas.js",
+        "js/schema_preview.js",
         "js/authorize.js",
         "js/copy_url.js",
-        "js/github_link.js",
+        "js/mascot.js",
+        "js/extension_support.js",
         "js/main.js"
       ],
       "css": [
@@ -44,8 +49,10 @@
         "css/search.css",
         "css/favorites.css",
         "css/authorization.css",
+        "css/copy_url.css",
         "css/scroll_top.css",
-        "css/github_link.css"
+        "css/mascot.css",
+        "css/extension_support.css"
       ],
       "run_at": "document_idle"
     },
@@ -56,6 +63,7 @@
         "*://*/*openapi*"
       ],
       "js": [
+        "js/schema_navigation.js",
         "js/favorites_bridge.js"
       ],
       "run_at": "document_start",
@@ -78,8 +86,13 @@
     "48": "assets/icon48.png",
     "128": "assets/icon128.png"
   },
-  "permissions": ["storage"],
-  "host_permissions": ["<all_urls>"],
+  "permissions": [
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   }

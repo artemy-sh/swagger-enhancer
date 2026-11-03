@@ -1,11 +1,11 @@
 /* Per-operation authorization state is supplied by Swagger, not the global login state. */
 body.swagger-authorization-enabled .swagger-ui .authorization__btn.swagger-route-authorization {
-  color: var(--se-error);
+  color: var(--se-auth-required);
   opacity: 1;
 }
 
 body.swagger-authorization-enabled .swagger-ui .authorization__btn.swagger-route-authorization.is-authorized {
-  color: var(--se-success);
+  color: var(--se-auth-authorized);
 }
 
 body.swagger-authorization-enabled .swagger-ui .authorization__btn.swagger-route-authorization svg {

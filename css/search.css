@@ -4,18 +4,6 @@
  */
 
 /* ========================
-   UNIVERSAL OUTLINE RESET
-=========================== */
-#swagger-search-container,
-#swagger-search-container *,
-#swagger-search-container *:focus,
-#swagger-search-container *:focus-visible,
-#swagger-search-container *:focus-within {
-  outline: var(--se-no-outline);
-  outline-offset: 0 !important;
-}
-
-/* ========================
    SEARCH CONTAINER STYLES
 =========================== */
 
@@ -47,76 +35,23 @@
 }
 
 #swagger-search-container input[type="search"]:focus {
-  outline-offset: 0 !important;
-  border-color: var(--se-primary);
-  box-shadow: 0 0 0 2px rgba(73, 144, 226, 0.2) !important;
-}
-
-#swagger-search-container input[type="search"]:focus-visible {
-  outline-offset: 0 !important;
-}
-
-#swagger-search-container input[type="search"]:focus-within {
-  outline-offset: 0 !important;
-}
-
-#swagger-search-container input[type="search"]:active {
-  outline-offset: 0 !important;
+  outline: none;
+  border-color: #2467c2;
+  box-shadow: 0 0 0 2px rgba(73, 144, 226, 0.2);
 }
 
 #swagger-search-container input[type="search"] {
-  outline-offset: 0 !important;
-  -webkit-appearance: none !important;
-  -moz-appearance: none !important;
-  appearance: none !important;
+  appearance: none;
 }
 
-/* Дополнительные правила для переопределения браузерных стилей */
 #swagger-search-container input[type="search"]::-webkit-search-decoration,
 #swagger-search-container input[type="search"]::-webkit-search-cancel-button,
 #swagger-search-container input[type="search"]::-webkit-search-results-button,
-#swagger-search-container input[type="search"]::-webkit-search-results-decoration {
-  -webkit-appearance: none !important;
-  appearance: none !important;
-}
-
-/* Максимально специфичные правила для переопределения outline */
-html #swagger-search-container input[type="search"]:focus,
-body #swagger-search-container input[type="search"]:focus,
-#swagger-ui #swagger-search-container input[type="search"]:focus {
-  outline-offset: 0 !important;
-  box-shadow: 0 0 0 2px rgba(73, 144, 226, 0.2) !important;
-}
-
-/* Универсальное правило для всех input элементов */
-input[type="search"]:focus {
-  outline-offset: 0 !important;
-}
-
-/* Дополнительное правило для focus-visible состояния */
-#swagger-search-container input[type="search"]:focus-visible {
-  outline-offset: 0 !important;
-  -webkit-focus-ring-color: transparent !important;
-}
-
-/* Максимально агрессивное правило для переопределения user agent stylesheet */
-html #swagger-search-container input[type="search"]:focus-visible,
-body #swagger-search-container input[type="search"]:focus-visible,
-#swagger-ui #swagger-search-container input[type="search"]:focus-visible {
-  outline-offset: 0 !important;
-  -webkit-focus-ring-color: transparent !important;
-}
-
-/* Ультра-агрессивное правило для полного переопределения */
-* #swagger-search-container input[type="search"]:focus-visible {
-  outline-offset: 0 !important;
-  -webkit-focus-ring-color: transparent !important;
-  box-shadow: 0 0 0 2px rgba(73, 144, 226, 0.2) !important;
-}
+#swagger-search-container input[type="search"]::-webkit-search-results-decoration { appearance: none; }
 
 #swagger-search-container input[type="search"]::placeholder {
-  color: var(--se-light-text);
-  opacity: 0.6;
+  color: #626a73;
+  opacity: 1;
 }
 
 /* ========================
@@ -193,7 +128,7 @@ body #swagger-search-container input[type="search"]:focus-visible,
 #swagger-search-container li span.route-path {
   display: inline-flex;
   font-size: 13px;
-  color: var(--se-primary);
+  color: #2467c2;
   max-width: 370px;
   white-space: nowrap;
   overflow: hidden;
@@ -218,31 +153,31 @@ body #swagger-search-container input[type="search"]:focus-visible,
 =========================== */
 
 .route-method[data-method="GET"] {
-  background: var(--se-method-get);
+  background: #1f6fb2;
 }
 
 .route-method[data-method="POST"] {
-  background: var(--se-method-post);
+  background: #16794a;
 }
 
 .route-method[data-method="PUT"] {
-  background: var(--se-method-put);
+  background: #8a6200;
 }
 
 .route-method[data-method="DELETE"] {
-  background: var(--se-method-delete);
+  background: #b42318;
 }
 
 .route-method[data-method="PATCH"] {
-  background: var(--se-method-patch);
+  background: #087f76;
 }
 
 .route-method[data-method="OPTIONS"] {
-  background: var(--se-method-options);
+  background: #0d5aa7;
 }
 
 .route-method[data-method="HEAD"] {
-  background: var(--se-method-head);
+  background: #8c43cd;
 }
 
 /* ========================
@@ -261,8 +196,8 @@ html.swagger-dark-theme #swagger-search-container input[type="search"]:focus {
 }
 
 html.swagger-dark-theme #swagger-search-container input[type="search"]::placeholder {
-  color: var(--se-dark-text);
-  opacity: 0.6;
+  color: #b0b9c3;
+  opacity: 1;
 }
 
 html.swagger-dark-theme #swagger-search-container ul {
@@ -284,7 +219,7 @@ html.swagger-dark-theme #swagger-search-container li span.route-tag {
 }
 
 html.swagger-dark-theme #swagger-search-container li span.route-path {
-  color: var(--se-primary);
+  color: #a8ceff;
 }
 
 html.swagger-dark-theme #swagger-search-container li div.route-desc {
@@ -315,7 +250,7 @@ html.swagger-dark-theme #swagger-search-container li div.route-desc {
 =========================== */
 
 #swagger-search-container li[aria-selected="true"] {
-  background-color: var(--se-primary);
+  background-color: #2467c2;
   color: var(--se-white);
 }
 
@@ -327,3 +262,25 @@ html.swagger-dark-theme #swagger-search-container li div.route-desc {
   color: var(--se-white);
   opacity: 0.9;
 }
+
+#swagger-search-container li[aria-selected="true"] span.route-tag { color: var(--se-white); }
+html.swagger-dark-theme #swagger-search-container li[aria-selected="true"] :is(span.route-tag, span.route-path) { color: var(--se-white); }
+html.swagger-dark-theme #swagger-search-container li[aria-selected="true"] { background-color: #2467c2; color: var(--se-white); }
+html.swagger-dark-theme #swagger-search-container li[aria-selected="true"] div.route-desc { color: var(--se-white); }
+
+#swagger-search-container .swagger-search-empty {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  padding: 12px;
+  border: 1px solid var(--se-light-border);
+  border-radius: var(--se-radius-sm);
+  background: var(--se-light-bg);
+  color: #607181;
+  box-shadow: var(--se-shadow-md);
+  font: 12px/18px var(--se-font-family);
+}
+html.swagger-dark-theme #swagger-search-container .swagger-search-empty { background: var(--se-dark-surface); color: #b7c4d0; border-color: var(--se-dark-border); }
+.route-method[data-method="TRACE"] { background: #6b469f; }
+.route-method[data-method="QUERY"] { background: #8a4b08; }

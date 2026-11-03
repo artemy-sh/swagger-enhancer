@@ -1,6 +1,6 @@
 /**
  * Popup script for Swagger Enhancer
- * Manages UI switches and communicates with content scripts
+ * Saves settings, content scripts subscribe to chrome.storage.onChanged
  */
 
 (() => {
@@ -8,34 +8,39 @@
 
   // Configuration for toggles
   const TOGGLE_CONFIG = [
-    { id: 'toggle', storageKey: 'darkThemeEnabled', messageType: 'TOGGLE_THEME' },
-    { id: 'searchToggle', storageKey: 'swaggerSearchEnabled', messageType: 'TOGGLE_SEARCH' },
-    { id: 'favoritesToggle', storageKey: 'swaggerFavoritesEnabled', messageType: 'TOGGLE_FAVORITES' },
-    { id: 'scrollTopToggle', storageKey: 'scrollTopEnabled', messageType: 'TOGGLE_SCROLL_TOP' },
-    { id: 'hideResponsesToggle', storageKey: 'hideResponsesEnabled', messageType: 'TOGGLE_HIDE_RESPONSES' },
-    { id: 'hideSchemasToggle', storageKey: 'hideSchemasEnabled', messageType: 'TOGGLE_HIDE_SCHEMAS' },
-    { id: 'authorizeInHeaderToggle', storageKey: 'authorizeInHeaderEnabled', messageType: 'TOGGLE_AUTHORIZE_IN_HEADER' },
-    { id: 'copyFullUrlToggle', storageKey: 'copyFullUrlEnabled', messageType: 'TOGGLE_COPY_FULL_URL' }
+    { id: 'toggle', storageKey: 'darkThemeEnabled' },
+    { id: 'searchToggle', storageKey: 'swaggerSearchEnabled' },
+    { id: 'favoritesToggle', storageKey: 'swaggerFavoritesEnabled' },
+    { id: 'scrollTopToggle', storageKey: 'scrollTopEnabled' },
+    { id: 'hideResponsesToggle', storageKey: 'hideResponsesEnabled' },
+    { id: 'hideSchemasToggle', storageKey: 'hideSchemasEnabled' },
+    { id: 'schemaPreviewToggle', storageKey: 'schemaPreviewEnabled' },
+    { id: 'authorizeInHeaderToggle', storageKey: 'authorizeInHeaderEnabled' },
+    { id: 'copyFullUrlToggle', storageKey: 'copyFullUrlEnabled' }
   ];
 
   let elements = {};
 
   document.addEventListener('DOMContentLoaded', async () => {
+    document.addEventListener('keydown', () => document.body.classList.add('swagger-keyboard-navigation'), true);
+    document.addEventListener('pointerdown', () => document.body.classList.remove('swagger-keyboard-navigation'), true);
+    try { window.SwaggerEnhancerSupport?.initPopup(document.getElementById('swagger-support-panel')); }
+    catch (error) { console.warn('Could not initialize extension support controls:', error); }
     try {
       // Get DOM elements
       elements = {
         container: document.getElementById('container'),
+        error: document.getElementById('swagger-settings-error'),
+        retry: document.getElementById('swagger-settings-retry'),
         toggles: TOGGLE_CONFIG.reduce((acc, config) => {
           acc[config.id] = document.getElementById(config.id);
           return acc;
         }, {})
       };
 
-      // Load and apply initial state
-      await loadInitialState();
-      
-      // Setup event listeners
       setupEventListeners();
+      elements.retry?.addEventListener('click', loadInitialState);
+      await loadInitialState();
 
     } catch (error) {
       console.error('Popup initialization failed:', error);
@@ -47,6 +52,8 @@
    * Load initial state from storage
    */
   async function loadInitialState() {
+    Object.values(elements.toggles).forEach(toggle => { if (toggle) toggle.disabled = true; });
+    if (elements.retry) elements.retry.disabled = true;
     try {
       const storageKeys = TOGGLE_CONFIG.map(config => config.storageKey);
       const result = await getStorage(storageKeys);
@@ -60,10 +67,14 @@
           if (config.id === 'toggle') {
             updateTheme(toggle.checked);
           }
+          toggle.disabled = false;
         }
       });
+      clearError();
     } catch (error) {
       console.error('Failed to load initial state:', error);
+      showError('Could not load settings. Retry before making changes.');
+      if (elements.retry) { elements.retry.hidden = false; elements.retry.disabled = false; }
     }
   }
 
@@ -76,8 +87,12 @@
       if (!toggle) return;
 
       toggle.addEventListener('change', async () => {
+        if (toggle.disabled) return;
+        const enabled = toggle.checked;
+        const previous = !enabled;
+        const hadFocus = document.activeElement === toggle;
+        toggle.disabled = true;
         try {
-          const enabled = toggle.checked;
           
           // Save to storage
           await setStorage({ [config.storageKey]: enabled });
@@ -86,15 +101,16 @@
           if (config.id === 'toggle') {
             updateTheme(enabled);
           }
-          
-          // Notify content script
-          await notifyContent(config.messageType, enabled);
-          
+          // All Swagger tabs receive this change through storage.onChanged.
+          clearError();
         } catch (error) {
           console.error(`Failed to handle toggle ${config.id}:`, error);
           // Revert toggle state on error
-          toggle.checked = !toggle.checked;
-          showError('Failed to save setting');
+          toggle.checked = previous;
+          showError('Could not save this setting. Your previous setting is unchanged.');
+        } finally {
+          toggle.disabled = false;
+          if (hadFocus && document.activeElement === document.body) toggle.focus({ preventScroll: true });
         }
       });
     });
@@ -108,30 +124,6 @@
     
     elements.container.classList.toggle('dark', isDark);
     elements.container.classList.toggle('light', !isDark);
-  }
-
-  /**
-   * Notify content script in active tab
-   */
-  async function notifyContent(type, enabled) {
-    try {
-      const tabs = await new Promise((resolve) => {
-        chrome.tabs.query({ active: true, currentWindow: true }, resolve);
-      });
-
-      if (tabs[0]?.id) {
-        await new Promise((resolve) => {
-          chrome.tabs.sendMessage(tabs[0].id, { type, enabled }, (response) => {
-            if (chrome.runtime.lastError) {
-              console.warn('Message not delivered:', chrome.runtime.lastError.message);
-            }
-            resolve(response);
-          });
-        });
-      }
-    } catch (error) {
-      console.error('Failed to notify content script:', error);
-    }
   }
 
   /**
@@ -172,9 +164,13 @@
   /**
    * Show error message to user
    */
+  function clearError() {
+    if (elements.error) { elements.error.textContent = ''; elements.error.hidden = true; }
+    if (elements.retry) elements.retry.hidden = true;
+  }
+
   function showError(message) {
-    // Simple error display - could be enhanced with better UI
-    console.error(message);
+    if (elements.error) { elements.error.textContent = message; elements.error.hidden = false; }
   }
 
 })();
