@@ -5,23 +5,6 @@
 =========================== */
 
 /* ========================
-   UNIVERSAL OUTLINE RESET
-=========================== */
-.swagger-dark-theme #swagger-search-container,
-.swagger-dark-theme #swagger-search-container *,
-.swagger-dark-theme #swagger-search-container *:focus,
-.swagger-dark-theme #swagger-search-container *:focus-visible,
-.swagger-dark-theme #swagger-search-container *:focus-within,
-.swagger-dark-theme #swagger-floating-menu,
-.swagger-dark-theme #swagger-floating-menu *,
-.swagger-dark-theme #swagger-floating-menu *:focus,
-.swagger-dark-theme #swagger-floating-menu *:focus-visible,
-.swagger-dark-theme #swagger-floating-menu *:focus-within {
-  outline: var(--se-no-outline);
-  outline-offset: 0 !important;
-}
-
-/* ========================
    GLOBAL BACKGROUND & TEXT
 =========================== */
 .swagger-dark-theme html,
@@ -89,6 +72,10 @@
 }
 
 .swagger-dark-theme .swagger-ui .opblock .opblock-summary-description {
+  color: #b0bec5 !important;
+}
+
+.swagger-dark-theme .swagger-ui .opblock-tag small {
   color: #b0bec5 !important;
 }
 
@@ -189,14 +176,6 @@
 .swagger-dark-theme .swagger-ui .btn.execute {
   background-color: #4990e2 !important;
   color: #ffffff !important;
-}
-
-/* ========================
-   REMOVE FOCUS OUTLINE
-=========================== */
-.swagger-dark-theme .swagger-ui .model-box-control:focus,
-.swagger-dark-theme .swagger-ui .models-control:focus,
-.swagger-dark-theme .swagger-ui .opblock-summary-control:focus {
 }
 
 /* ========================
@@ -301,83 +280,6 @@
   color: var(--se-dark-text-light) !important;
 }
 
-/* ========================
-   SEARCH EXTENSION
-=========================== */
-.swagger-dark-theme #swagger-search-container input[type="search"] {
-  background-color: var(--se-dark-input-bg);
-  color: var(--se-dark-text);
-  border: 1px solid var(--se-dark-input-border);
-}
-
-.swagger-dark-theme #swagger-search-container input[type="search"]:focus {
-  outline-offset: 0 !important;
-  border-color: var(--se-primary);
-  box-shadow: 0 0 0 2px rgba(73, 144, 226, 0.2) !important;
-}
-
-.swagger-dark-theme #swagger-search-container input[type="search"]:focus-visible {
-  outline-offset: 0 !important;
-}
-
-.swagger-dark-theme #swagger-search-container input[type="search"]:focus-within {
-  outline-offset: 0 !important;
-}
-
-.swagger-dark-theme #swagger-search-container input[type="search"]:active {
-  outline-offset: 0 !important;
-}
-
-.swagger-dark-theme #swagger-search-container input[type="search"] {
-  outline-offset: 0 !important;
-  -webkit-appearance: none !important;
-  -moz-appearance: none !important;
-  appearance: none !important;
-}
-
-/* Дополнительные правила для переопределения браузерных стилей */
-.swagger-dark-theme #swagger-search-container input[type="search"]::-webkit-search-decoration,
-.swagger-dark-theme #swagger-search-container input[type="search"]::-webkit-search-cancel-button,
-.swagger-dark-theme #swagger-search-container input[type="search"]::-webkit-search-results-button,
-.swagger-dark-theme #swagger-search-container input[type="search"]::-webkit-search-results-decoration {
-  -webkit-appearance: none !important;
-  appearance: none !important;
-}
-
-/* Максимально специфичные правила для переопределения outline */
-.swagger-dark-theme html #swagger-search-container input[type="search"]:focus,
-.swagger-dark-theme body #swagger-search-container input[type="search"]:focus,
-.swagger-dark-theme #swagger-ui #swagger-search-container input[type="search"]:focus {
-  outline-offset: 0 !important;
-  box-shadow: 0 0 0 2px rgba(73, 144, 226, 0.2) !important;
-}
-
-/* Универсальное правило для всех input элементов в темной теме */
-.swagger-dark-theme input[type="search"]:focus {
-  outline-offset: 0 !important;
-}
-
-/* Дополнительное правило для focus-visible состояния в темной теме */
-.swagger-dark-theme #swagger-search-container input[type="search"]:focus-visible {
-  outline-offset: 0 !important;
-  -webkit-focus-ring-color: transparent !important;
-}
-
-/* Максимально агрессивное правило для переопределения user agent stylesheet в темной теме */
-.swagger-dark-theme html #swagger-search-container input[type="search"]:focus-visible,
-.swagger-dark-theme body #swagger-search-container input[type="search"]:focus-visible,
-.swagger-dark-theme #swagger-ui #swagger-search-container input[type="search"]:focus-visible {
-  outline-offset: 0 !important;
-  -webkit-focus-ring-color: transparent !important;
-}
-
-/* Ультра-агрессивное правило для полного переопределения в темной теме */
-.swagger-dark-theme * #swagger-search-container input[type="search"]:focus-visible {
-  outline-offset: 0 !important;
-  -webkit-focus-ring-color: transparent !important;
-  box-shadow: 0 0 0 2px rgba(73, 144, 226, 0.2) !important;
-}
-
 .swagger-dark-theme #swagger-search-container ul {
   background: var(--se-dark-surface);
   border: 1px solid var(--se-dark-border);
@@ -432,19 +334,6 @@
 }
 
 /* ========================
-   GITHUB_LINK
-=========================== */
-.swagger-dark-theme #swagger-github-link {
-  opacity: 0.3 !important;
-  color: white !important;
-}
-
-#swagger-github-link:hover {
-  opacity: 1 !important;
-  color: #ffffff !important;
-}
-
-/* ========================
    FLOATING_MENU
 =========================== */
 
@@ -453,20 +342,6 @@
   color: var(--se-menu-text);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   backdrop-filter: var(--se-menu-blur);
-}
-
-/* Дополнительные правила для отключения outline на всех элементах меню в темной теме */
-.swagger-dark-theme #swagger-floating-menu:focus,
-.swagger-dark-theme #swagger-floating-menu:focus-visible,
-.swagger-dark-theme #swagger-floating-menu:focus-within {
-}
-
-.swagger-dark-theme #swagger-floating-menu * {
-}
-
-.swagger-dark-theme #swagger-floating-menu *:focus,
-.swagger-dark-theme #swagger-floating-menu *:focus-visible,
-.swagger-dark-theme #swagger-floating-menu *:focus-within {
 }
 
 /* ========================
@@ -480,3 +355,14 @@
 .swagger-dark-theme .swagger-ui section.models h4{
   background-color: var(--se-dark-surface) !important;
 }
+/* OpenAPI 3.1/3.2 schema headings have their own explicit light-theme colors. */
+.swagger-dark-theme .swagger-ui .models-control,
+.swagger-dark-theme .swagger-ui .json-schema-2020-12,
+.swagger-dark-theme .swagger-ui .json-schema-2020-12__title,
+.swagger-dark-theme .swagger-ui .json-schema-2020-12-property,
+.swagger-dark-theme .swagger-ui .json-schema-2020-12-keyword__name--primary,
+.swagger-dark-theme .swagger-ui .json-schema-2020-12-keyword__value--primary { color: var(--se-dark-text) !important; }
+.swagger-dark-theme .swagger-ui .json-schema-2020-12__attribute--primary,
+.swagger-dark-theme .swagger-ui .json-schema-2020-12-keyword__name--secondary { color: var(--se-info) !important; }
+.swagger-dark-theme .swagger-ui .json-schema-2020-12__attribute--muted,
+.swagger-dark-theme .swagger-ui .json-schema-2020-12-keyword__value--secondary { color: #b7c4d0 !important; }

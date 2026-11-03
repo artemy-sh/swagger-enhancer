@@ -6,8 +6,6 @@
 (() => {
   'use strict';
 
-  const FAVORITES_KEY = 'swaggerFavorites';
-  const FILTER_STATE_KEY = 'swaggerFavoritesFilterState';
   const STORAGE_KEY = 'swaggerFavoritesEnabled';
 
   /**
@@ -26,8 +24,27 @@
 
     onEnable() {
       document.body.classList.add('swagger-fav-enabled');
+      this.store = window.SwaggerEnhancerFavoritesStore;
+      if (!this.hasNativeFilter()) this.store.setScope(`document:${location.origin}${location.pathname}${location.search}`);
+      this.scopeHandler = event => {
+        let scope;
+        try { scope = JSON.parse(event.detail).scope; } catch { return; }
+        if (typeof scope !== 'string' || !scope || scope === this.store.scope) return;
+        this.store.setScope(scope);
+        this.refreshFromStorage();
+      };
+      this.storageHandler = event => {
+        if (event.storageArea && event.storageArea !== localStorage) return;
+        if (event.key === null || Object.values(this.store.keys()).includes(event.key)) this.refreshFromStorage();
+      };
+      document.addEventListener('swagger-enhancer:spec-changed', this.scopeHandler);
+      window.addEventListener('storage', this.storageHandler);
+      this.bridgeReadyHandler = () => {
+        document.dispatchEvent(new Event('swagger-enhancer:scope-request'));
+        this.applyFavoriteFilter();
+      };
+      document.dispatchEvent(new Event('swagger-enhancer:scope-request'));
       this.filterState = this.getFilterState();
-      this.bridgeReadyHandler = () => this.applyFavoriteFilter();
       document.addEventListener('swagger-enhancer:favorites-ready', this.bridgeReadyHandler);
       this.enhanceAllSummaries();
       this.insertFavoritesFilter();
@@ -38,6 +55,8 @@
       document.body.classList.remove('swagger-fav-enabled');
       this.stopObserver();
       document.removeEventListener('swagger-enhancer:favorites-ready', this.bridgeReadyHandler);
+      document.removeEventListener('swagger-enhancer:spec-changed', this.scopeHandler);
+      window.removeEventListener('storage', this.storageHandler);
       this.updateNativeFilter();
       this.clearFavoritesUI();
       this.hiddenElements.forEach((display, el) => { el.style.display = display; });
@@ -46,26 +65,31 @@
 
     // === Storage Utils ===
 
-    getFavoritesMap() {
-      try {
-        const favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '{}');
-        return favorites && typeof favorites === 'object' && !Array.isArray(favorites) ? favorites : {};
-      } catch {
-        return {};
-      }
-    }
+    getFavoritesMap() { return this.store.getFavorites(); }
 
     saveFavoritesMap(favorites) {
-      localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+      const saved = this.store.saveFavorites(favorites);
+      this.updateStorageStatus();
+      return saved;
     }
 
-    getFilterState() {
-      const state = Number(localStorage.getItem(FILTER_STATE_KEY) || '0');
-      return [0, 1, 2].includes(state) ? state : 0;
+    getFilterState() { return this.store.getFilterState(); }
+
+    refreshFromStorage() {
+      this.filterState = this.getFilterState();
+      this.nativeSignature = null;
+      this.enhanceAllSummaries();
+      const button = document.getElementById('swagger-fav-filter');
+      if (button) this.updateFilterButtonStyle(button, document.querySelector('.swagger-fav-label'));
+      this.updateStorageStatus();
     }
 
-    saveFilterState(state) {
-      localStorage.setItem(FILTER_STATE_KEY, String(state));
+    updateStorageStatus() {
+      const status = document.getElementById('swagger-fav-status');
+      if (status) {
+        status.textContent = this.store.error ? 'Could not save or load favorites. Check site storage access.' : '';
+        status.hidden = !this.store.error;
+      }
     }
 
     // === Route Utils ===
@@ -79,10 +103,11 @@
     // === UI Components ===
 
     createFavoriteButton(summaryEl, isFavorited) {
-      const star = document.createElement('span');
+      const star = document.createElement('button');
+      star.type = 'button';
       star.className = 'swagger-fav-star';
       star.textContent = isFavorited ? '★' : '☆';
-      star.title = 'Add to favorites';
+      star.setAttribute('aria-pressed', String(isFavorited));
       star.style.userSelect = 'none';
 
       star.addEventListener('click', (e) => {
@@ -93,8 +118,19 @@
         if (!currentRouteKey) return;
         const currentFavorites = this.getFavoritesMap();
         const alreadyFavorited = !!currentFavorites[currentRouteKey];
+        const hadFocus = document.activeElement === star;
         this.toggleFavorite(currentRouteKey, summaryEl, alreadyFavorited);
-        if (this.filterState !== 0) this.applyFavoriteFilter();
+        if (this.filterState !== 0) {
+          this.applyFavoriteFilter();
+          if (hadFocus) {
+            cancelAnimationFrame(this.focusFrame);
+            this.focusFrame = requestAnimationFrame(() => {
+              if (this.enabled && document.activeElement === document.body) {
+                document.getElementById('swagger-fav-filter')?.focus({ preventScroll: true });
+              }
+            });
+          }
+        }
       });
 
       return star;
@@ -103,7 +139,13 @@
     markAsFavorite(summaryEl, isFavorited) {
       summaryEl.classList.toggle('swagger-favorite', isFavorited);
       const star = summaryEl.querySelector('.swagger-fav-star');
-      if (star && star.textContent !== (isFavorited ? '★' : '☆')) star.textContent = isFavorited ? '★' : '☆';
+      if (star) {
+        const label = `${isFavorited ? 'Remove from' : 'Add to'} favorites: ${this.getRouteKey(summaryEl)}`;
+        if (star.textContent !== (isFavorited ? '★' : '☆')) star.textContent = isFavorited ? '★' : '☆';
+        if (star.title !== label) star.title = label;
+        if (star.getAttribute('aria-label') !== label) star.setAttribute('aria-label', label);
+        if (star.getAttribute('aria-pressed') !== String(isFavorited)) star.setAttribute('aria-pressed', String(isFavorited));
+      }
     }
 
     toggleFavorite(routeKey, summaryEl, isFavorited) {
@@ -113,8 +155,12 @@
       } else {
         favorites[routeKey] = true;
       }
-      this.saveFavoritesMap(favorites);
-      this.markAsFavorite(summaryEl, !isFavorited);
+      if (this.saveFavoritesMap(favorites)) {
+        // Swagger may render one operation once for each of its tags.
+        document.querySelectorAll('.opblock-summary').forEach(summary => {
+          if (this.getRouteKey(summary) === routeKey) this.markAsFavorite(summary, !isFavorited);
+        });
+      }
     }
 
     // === DOM Enhancement ===
@@ -138,7 +184,7 @@
         const isFavorited = !!favorites[routeKey];
         if (!summary.querySelector('.swagger-fav-star')) {
           const star = this.createFavoriteButton(summary, isFavorited);
-          methodEl.parentNode.insertBefore(star, methodEl);
+          summary.insertBefore(star, summary.firstChild);
         }
         this.markAsFavorite(summary, isFavorited);
         summary.dataset.favApplied = '1';
@@ -169,7 +215,8 @@
       filterBtn.textContent = '★';
       filterBtn.type = 'button';
 
-      const label = document.createElement('span');
+      const label = document.createElement('button');
+      label.type = 'button';
       label.className = 'swagger-fav-label';
       label.style.cursor = 'pointer';
 
@@ -178,48 +225,59 @@
       label.addEventListener('click', () => filterBtn.click());
 
       filterBtn.addEventListener('click', () => {
-        this.filterState = (this.filterState + 1) % 3;
-        this.saveFilterState(this.filterState);
+        const next = (this.filterState + 1) % 3;
+        if (!this.store.saveFilterState(next)) { this.updateStorageStatus(); return; }
+        this.updateStorageStatus();
+        this.filterState = next;
         this.updateFilterButtonStyle(filterBtn, label);
         this.applyFavoriteFilter();
       });
 
-      const all = document.createElement('span');
+      const all = document.createElement('button');
+      all.type = 'button';
       all.className = 'swagger-fav-all';
       all.textContent = 'all';
       all.style.cursor = 'pointer';
       all.style.marginRight = '8px';
       all.addEventListener('click', () => {
-        if (this.hasNativeFilter()) document.dispatchEvent(new Event('swagger-enhancer:favorites-select-all'));
         const favorites = this.getFavoritesMap();
+        if (this.hasNativeFilter()) {
+          const receive = event => {
+            let keys;
+            try { keys = JSON.parse(event.detail); } catch { return; }
+            if (Array.isArray(keys)) keys.filter(key => typeof key === 'string').forEach(key => { favorites[key] = true; });
+          };
+          document.addEventListener('swagger-enhancer:favorites-selection', receive);
+          document.dispatchEvent(new Event('swagger-enhancer:favorites-select-all'));
+          document.removeEventListener('swagger-enhancer:favorites-selection', receive);
+        }
         document.querySelectorAll('.opblock-summary').forEach((summary) => {
           const routeKey = this.getRouteKey(summary);
           if (routeKey) {
             favorites[routeKey] = true;
-            this.markAsFavorite(summary, true);
           }
         });
-        this.saveFavoritesMap(favorites);
-        this.applyFavoriteFilter();
+        if (this.saveFavoritesMap(favorites)) this.enhanceAllSummaries();
       });
 
-      const reset = document.createElement('span');
+      const reset = document.createElement('button');
+      reset.type = 'button';
       reset.className = 'swagger-fav-reset';
       reset.textContent = 'reset';
       reset.style.cursor = 'pointer';
       reset.addEventListener('click', () => {
-        localStorage.removeItem(FAVORITES_KEY);
-        document.querySelectorAll('.opblock-summary').forEach((summary) => {
-          const routeKey = this.getRouteKey(summary);
-          if (routeKey) this.markAsFavorite(summary, false);
-        });
-        this.applyFavoriteFilter();
+        if (this.saveFavoritesMap({})) this.enhanceAllSummaries();
       });
 
       container.appendChild(filterBtn);
       container.appendChild(label);
       container.appendChild(all);
       container.appendChild(reset);
+      const status = document.createElement('span');
+      status.id = 'swagger-fav-status';
+      status.setAttribute('role', 'status');
+      status.hidden = true;
+      container.appendChild(status);
 
       const leftMenu = document.querySelector('#swagger-floating-menu .swagger-menu-left');
       if (leftMenu) {
@@ -228,6 +286,7 @@
         const menu = document.getElementById('swagger-floating-menu');
         (menu || document.body).appendChild(container);
       }
+      this.updateStorageStatus();
     }
 
     updateFilterButtonStyle(button, label) {
@@ -241,6 +300,7 @@
       };
 
       button.title = titles[this.filterState];
+      button.setAttribute('aria-label', `Favorites filter: ${titles[this.filterState]}. Click to change mode.`);
 
       if (label) {
         label.textContent = titles[this.filterState];
@@ -254,8 +314,8 @@
     }
 
     updateNativeFilter() {
-      const state = JSON.stringify({ enabled: this.enabled, filterState: this.filterState });
-      const signature = state + localStorage.getItem(FAVORITES_KEY);
+      const state = JSON.stringify({ enabled: this.enabled, filterState: this.filterState, favorites: this.getFavoritesMap() });
+      const signature = state;
       if (this.nativeSignature === signature) return;
       this.nativeSignature = signature;
       document.dispatchEvent(new CustomEvent('swagger-enhancer:favorites-update', { detail: state }));
@@ -328,6 +388,7 @@
     }
 
     stopObserver() {
+      cancelAnimationFrame(this.focusFrame);
       this.observer?.disconnect();
       this.observer = null;
     }

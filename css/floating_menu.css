@@ -4,18 +4,6 @@
  */
 
 /* ========================
-   UNIVERSAL OUTLINE RESET
-=========================== */
-#swagger-floating-menu,
-#swagger-floating-menu *,
-#swagger-floating-menu *:focus,
-#swagger-floating-menu *:focus-visible,
-#swagger-floating-menu *:focus-within {
-  outline: var(--se-no-outline);
-  outline-offset: 0 !important;
-}
-
-/* ========================
    BODY PADDING ADJUSTMENT
 =========================== */
 
@@ -45,20 +33,6 @@ body.swagger-enhancer-active {
   font-family: var(--se-font-family);
   transition: all var(--se-transition-normal);
   border-bottom: 1px solid var(--se-light-border);
-}
-
-/* Дополнительные правила для отключения outline на всех элементах меню */
-#swagger-floating-menu:focus,
-#swagger-floating-menu:focus-visible,
-#swagger-floating-menu:focus-within {
-}
-
-#swagger-floating-menu * {
-}
-
-#swagger-floating-menu *:focus,
-#swagger-floating-menu *:focus-visible,
-#swagger-floating-menu *:focus-within {
 }
 
 /* ========================
@@ -122,10 +96,6 @@ html.swagger-dark-theme #swagger-floating-menu {
    ACCESSIBILITY
 =========================== */
 
-#swagger-floating-menu:focus-within {
-  outline: 2px solid var(--se-primary);
-  outline-offset: -2px;
-}
 
 /* ========================
    ANIMATIONS
@@ -158,4 +128,22 @@ html.swagger-dark-theme #swagger-floating-menu {
   html.swagger-dark-theme #swagger-floating-menu {
     border-bottom-color: var(--se-dark-text);
   }
+}
+
+/* A container never receives a ring just because one of its controls is focused. */
+body.swagger-enhancer-active:not(.swagger-keyboard-navigation) :is(
+  #swagger-floating-menu button, #swagger-floating-menu a,
+  .swagger-ui button, .swagger-ui a[href],
+  #swagger-schema-preview button, #swagger-schema-preview a, #swagger-schema-preview summary,
+  #swagger-scroll-top
+):focus { outline: none; }
+
+body.swagger-enhancer-active.swagger-keyboard-navigation :is(
+  #swagger-floating-menu button, #swagger-floating-menu a,
+  .swagger-route-authorization,
+  .json-schema-2020-12-accordion, .json-schema-2020-12-expand-deep-button,
+  #swagger-scroll-top
+):focus-visible {
+  outline: 2px solid var(--se-primary);
+  outline-offset: 2px;
 }

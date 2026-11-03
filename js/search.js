@@ -44,6 +44,7 @@
         const input = document.querySelector(`#${SEARCH_ID} input`);
         const results = document.querySelector(`#${SEARCH_ID} ul`);
         if (this.searchActive && input?.value.trim().length >= 2 && results) {
+          this.debouncedSearch?.cancel();
           this.performSearch(input.value.trim(), results);
         }
       };
@@ -110,8 +111,16 @@
       input.placeholder = 'Search for tag or route…';
       input.className = 'swagger-search-input';
       input.autocomplete = 'off';
+      input.setAttribute('role', 'combobox');
+      input.setAttribute('aria-label', 'Search API operations and tags');
+      input.setAttribute('aria-autocomplete', 'list');
+      input.setAttribute('aria-controls', 'swagger-search-results');
+      input.setAttribute('aria-expanded', 'false');
 
       const results = document.createElement('ul');
+      results.id = 'swagger-search-results';
+      results.setAttribute('role', 'listbox');
+      results.setAttribute('aria-label', 'Search results');
       results.className = 'swagger-search-results';
       results.style.display = 'none';
 
@@ -121,10 +130,11 @@
 
       input.addEventListener('input', (e) => {
         const value = e.target.value.trim();
+        this.closeResults(results);
         this.searchActive = value.length >= 2;
         this.debouncedSearch.cancel();
         if (value.length < 2) {
-          results.style.display = 'none';
+          this.closeResults(results);
           results.innerHTML = '';
         } else if (value.length >= 2) {
           this.debouncedSearch(value);
@@ -132,15 +142,43 @@
       });
 
       input.addEventListener('keydown', (e) => {
+        if (e.isComposing) return;
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (results.style.display === 'none' && input.value.trim().length >= 2) {
+            this.debouncedSearch.cancel();
+            this.performSearch(input.value.trim(), results);
+          }
+          if (results.style.display === 'none') return;
+          const options = [...results.children];
+          if (!options.length) return;
+          const current = options.findIndex(option => option.getAttribute('aria-selected') === 'true');
+          const next = current < 0 ? (e.key === 'ArrowDown' ? 0 : options.length - 1)
+            : (current + (e.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length;
+          options.forEach((option, index) => option.setAttribute('aria-selected', String(index === next)));
+          input.setAttribute('aria-activedescendant', options[next].id);
+          options[next].scrollIntoView?.({ block: 'nearest' });
+        }
+        if (e.key === 'Enter' && results.style.display !== 'none') {
+          const selected = results.querySelector('[aria-selected="true"]');
+          if (selected) { e.preventDefault(); selected.click(); }
+        }
         if (e.key === 'Escape') {
           this.searchActive = false;
           this.debouncedSearch.cancel();
           input.value = '';
-          results.style.display = 'none';
-          input.blur();
+          this.closeResults(results);
+        }
+      });
+      container.addEventListener('focusout', e => {
+        if (!container.contains(e.relatedTarget)) {
+          this.searchActive = false;
+          this.debouncedSearch.cancel();
+          this.closeResults(results);
         }
       });
       input.addEventListener('focus', () => {
+        if (this.returningFocus) return;
         this.searchActive = input.value.trim().length >= 2;
         if (this.searchActive) this.performSearch(input.value.trim(), results);
       });
@@ -150,12 +188,17 @@
         if (!container.contains(e.target)) {
           this.searchActive = false;
           this.debouncedSearch.cancel();
-          results.style.display = 'none';
+          this.closeResults(results);
         }
       };
       document.addEventListener('click', this.outsideClickHandler);
 
-      container.append(input, results);
+      const empty = document.createElement('div');
+      empty.className = 'swagger-search-empty';
+      empty.setAttribute('role', 'status');
+      empty.hidden = true;
+      empty.textContent = 'No matching operations or tags.';
+      container.append(input, results, empty);
 
       const menuRight = document.querySelector('#swagger-floating-menu .swagger-menu-right');
       if (menuRight) {
@@ -250,17 +293,22 @@
     }
 
     displayResults(matches, resultsContainer) {
+      this.closeResults(resultsContainer);
       resultsContainer.innerHTML = '';
       
       if (matches.length === 0) {
         resultsContainer.style.display = 'none';
+        const empty = document.querySelector(`#${SEARCH_ID} .swagger-search-empty`);
+        if (empty) empty.hidden = false;
         return;
       }
 
-      matches.forEach((match) => {
+      matches.forEach((match, index) => {
         const li = document.createElement('li');
+        li.id = `swagger-search-result-${index}`;
         li.setAttribute('role', 'option');
-        li.tabIndex = 0;
+        li.setAttribute('aria-selected', 'false');
+        li.tabIndex = -1;
         
         if (match.type === 'tag') {
           li.innerHTML = `<span class="route-tag">[${this.escapeHtml(match.text)}]</span>`;
@@ -285,10 +333,12 @@
           } else if (match.el?.isConnected) {
             window.SwaggerEnhancerUtils.dom.smoothScrollToElement(match.el, this.getMenuHeight());
           }
-          resultsContainer.style.display = 'none';
-          document.getElementById(SEARCH_ID)?.querySelector('input')?.focus({ preventScroll: true });
+          this.closeResults(resultsContainer);
           this.searchActive = false;
-          resultsContainer.style.display = 'none';
+          // Restoring focus is part of navigation, not a new search request.
+          this.returningFocus = true;
+          try { document.getElementById(SEARCH_ID)?.querySelector('input')?.focus({ preventScroll: true }); }
+          finally { this.returningFocus = false; }
         };
         
         li.addEventListener('click', clickHandler);
@@ -303,6 +353,16 @@
       });
 
       resultsContainer.style.display = 'block';
+      document.querySelector(`#${SEARCH_ID} input`)?.setAttribute('aria-expanded', 'true');
+    }
+
+    closeResults(results) {
+      results.style.display = 'none';
+      const empty = document.querySelector(`#${SEARCH_ID} .swagger-search-empty`);
+      if (empty) empty.hidden = true;
+      const input = document.querySelector(`#${SEARCH_ID} input`);
+      input?.setAttribute('aria-expanded', 'false');
+      input?.removeAttribute('aria-activedescendant');
     }
 
     // === Utility Methods ===

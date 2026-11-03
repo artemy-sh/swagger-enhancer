@@ -1,0 +1,43 @@
+/* A quiet inline invitation, with an explicit text link and a responsive mascot. */
+#swagger-extension-review {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 8px;
+  padding: 3px 3px 3px 0;
+  color: #6b7280;
+  font: 400 13px/20px var(--se-font-family);
+  text-decoration: none;
+  white-space: nowrap;
+}
+#swagger-extension-review .swagger-review-mascot { display: block; width: 36px; height: 36px; flex: 0 0 36px; }
+#swagger-extension-review { transition: color 160ms; }
+#swagger-extension-review .swagger-review-action {
+  color: inherit;
+  font-weight: 600;
+  margin-left: .25em;
+  text-decoration: underline;
+  text-decoration-color: #c4c8ce;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  transition: text-decoration-color 160ms;
+}
+#swagger-extension-review:is(:hover, :focus-visible) { color: #222; }
+#swagger-extension-review:is(:hover, :focus-visible) .swagger-review-action { text-decoration-color: currentColor; }
+#swagger-extension-review:focus-visible { outline: 2px solid var(--se-primary); outline-offset: 3px; }
+html.swagger-dark-theme #swagger-extension-review { color: #a1a6ad; }
+html.swagger-dark-theme #swagger-extension-review .swagger-review-action { text-decoration-color: #50565e; }
+html.swagger-dark-theme #swagger-extension-review:is(:hover, :focus-visible) { color: #fff; }
+html.swagger-dark-theme #swagger-extension-review:is(:hover, :focus-visible) .swagger-review-action { text-decoration-color: currentColor; }
+@media (max-width: 1100px) {
+  #swagger-extension-review { gap: 7px; font-size: 12px; }
+}
+@media (max-width: 900px) {
+  #swagger-extension-review { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #swagger-extension-review, #swagger-extension-review .swagger-review-action { transition: none; }
+}
+@media (forced-colors: active) {
+  #swagger-extension-review, #swagger-extension-review .swagger-review-action { color: LinkText; }
+}

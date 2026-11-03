@@ -47,9 +47,9 @@
   border: none !important;
 }
 
-.swagger-fav-enabled .opblock-summary-control:focus {
-  outline: none !important;
-  box-shadow: none !important;
+.swagger-fav-enabled .opblock-summary-control:focus-visible {
+  outline: 2px solid var(--se-primary);
+  outline-offset: -2px;
 }
 
 /* ========================
@@ -66,14 +66,6 @@
   border-radius: var(--se-radius-sm);
   background-color: transparent;
   transition: background-color var(--se-transition-fast);
-}
-
-.swagger-fav-control:hover {
-  background-color: var(--se-light-hover);
-}
-
-html.swagger-dark-theme .swagger-fav-control:hover {
-  background-color: var(--se-dark-surface-alt);
 }
 
 /* ========================
@@ -102,7 +94,7 @@ html.swagger-dark-theme .swagger-fav-filter-button:hover {
   background-color: var(--se-dark-surface-alt);
 }
 
-.swagger-fav-filter-button:focus {
+.swagger-fav-filter-button:focus-visible {
   outline: 2px solid var(--se-primary);
   outline-offset: 2px;
 }
@@ -134,7 +126,8 @@ html.swagger-dark-theme .swagger-fav-filter-button:hover {
 }
 
 .swagger-fav-label:hover {
-  opacity: 0.8;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .swagger-fav-label.state-0 {
@@ -161,7 +154,7 @@ html.swagger-dark-theme .swagger-fav-filter-button:hover {
   margin-left: 0;
   color: var(--se-fav-default);
   margin-top: -2px;
-  opacity: 0.6;
+  opacity: 1;
   transition: all var(--se-transition-fast);
   padding: var(--se-space-xs);
   border-radius: var(--se-radius-sm);
@@ -230,11 +223,11 @@ html.swagger-dark-theme .swagger-fav-enabled .opblock-summary.swagger-favorite {
    ACCESSIBILITY
 =========================== */
 
-.swagger-fav-star:focus,
-.swagger-fav-filter-button:focus,
-.swagger-fav-label:focus,
-.swagger-fav-reset:focus,
-.swagger-fav-all:focus {
+.swagger-fav-star:focus-visible,
+.swagger-fav-filter-button:focus-visible,
+.swagger-fav-label:focus-visible,
+.swagger-fav-reset:focus-visible,
+.swagger-fav-all:focus-visible {
   outline: 2px solid var(--se-primary);
   outline-offset: 2px;
 }
@@ -258,3 +251,34 @@ html.swagger-dark-theme .swagger-fav-enabled .opblock-summary.swagger-favorite {
 .swagger-fav-star:active {
   animation: fav-star-bounce 0.6s ease;
 }
+/* Native controls retain the compact appearance of the former text actions. */
+.swagger-ui .opblock-summary > button.swagger-fav-star,
+#swagger-fav-control :is(.swagger-fav-label, .swagger-fav-all, .swagger-fav-reset) {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  font-family: inherit;
+  line-height: inherit;
+}
+.swagger-ui .opblock-summary > button.swagger-fav-star {
+  padding: 0;
+  margin: 0 var(--se-space-sm) 0 var(--se-space-xs);
+  flex: 0 0 auto;
+  font-size: 18px;
+}
+#swagger-fav-control .swagger-fav-label { font-size: inherit; }
+.swagger-ui button.swagger-fav-star:focus-visible,
+#swagger-fav-control button:focus-visible {
+  outline: 2px solid var(--se-primary);
+  outline-offset: 2px;
+}
+#swagger-fav-status {
+  max-width: 220px;
+  font-size: 12px;
+  color: var(--se-fav-exclude);
+}
+
+/* Swagger focuses the whole summary after every click. Preserve keyboard focus
+   without a full-width mouse outline, including clipboard focus restoration. */
+body.swagger-enhancer-active .swagger-ui :is(.opblock-summary-control, .models-control, .model-box-control):focus { outline: none; }
+body.swagger-enhancer-active.swagger-keyboard-navigation .swagger-ui :is(.opblock-summary-control, .models-control, .model-box-control):focus-visible { outline: 2px solid var(--se-primary); outline-offset: -2px; }

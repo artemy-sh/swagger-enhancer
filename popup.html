@@ -5,34 +5,37 @@
   <title>Swagger Enhancer</title>
   <link rel="stylesheet" href="css/variables.css" />
   <link rel="stylesheet" href="css/popup.css" />
+  <link rel="stylesheet" href="css/mascot.css" />
 </head>
 <body>
   <div id="container" class="light">
     <h1>Swagger Enhancer</h1>
+    <p id="swagger-settings-error" role="alert" hidden></p>
+    <button id="swagger-settings-retry" type="button" hidden>Retry loading settings</button>
 
     <!-- Dark Theme Toggle -->
     <div class="toggle-container">
-      <span class="toggle-label">Dark Theme</span>
+      <label class="toggle-label" for="toggle">Dark Theme</label>
       <label class="switch">
-        <input type="checkbox" id="toggle" />
+        <input type="checkbox" id="toggle" disabled />
         <span class="slider"></span>
       </label>
     </div>
 
     <!-- Search Toggle -->
     <div class="toggle-container">
-      <span class="toggle-label">Search</span>
+      <label class="toggle-label" for="searchToggle">Search</label>
       <label class="switch">
-        <input type="checkbox" id="searchToggle" />
+        <input type="checkbox" id="searchToggle" disabled />
         <span class="slider"></span>
       </label>
     </div>
 
     <!-- Favorites Toggle -->
     <div class="toggle-container">
-      <span class="toggle-label">Favorites</span>
+      <label class="toggle-label" for="favoritesToggle">Favorites</label>
       <label class="switch">
-        <input type="checkbox" id="favoritesToggle" />
+        <input type="checkbox" id="favoritesToggle" disabled />
         <span class="slider"></span>
       </label>
     </div>
@@ -40,48 +43,96 @@
     <div class="toggle-container">
       <label class="toggle-label" for="authorizeInHeaderToggle" title="Header shortcut, authorization button labels and colors, and route lock icons">Authorize in header</label>
       <label class="switch">
-        <input type="checkbox" id="authorizeInHeaderToggle" />
+        <input type="checkbox" id="authorizeInHeaderToggle" disabled />
         <span class="slider"></span>
       </label>
     </div>
 
     <div class="toggle-container">
-      <label class="toggle-label" for="copyFullUrlToggle" title="Copy a full route URL or a link to its documentation">Copy full URL</label>
+      <label class="toggle-label" for="copyFullUrlToggle" title="Copy a documentation link, full route URL, or path">Copy full URL</label>
       <label class="switch">
-        <input type="checkbox" id="copyFullUrlToggle" />
+        <input type="checkbox" id="copyFullUrlToggle" disabled />
         <span class="slider"></span>
       </label>
     </div>
 
     <!-- Scroll To Top Toggle -->
     <div class="toggle-container">
-      <span class="toggle-label">Scroll to Top</span>
+      <label class="toggle-label" for="scrollTopToggle">Scroll to Top</label>
       <label class="switch">
-        <input type="checkbox" id="scrollTopToggle" />
+        <input type="checkbox" id="scrollTopToggle" disabled />
         <span class="slider"></span>
       </label>
     </div>
 
     <!-- Hide Responses Toggle -->
     <div class="toggle-container">
-      <span class="toggle-label">Hide responses</span>
+      <label class="toggle-label" for="hideResponsesToggle">Hide responses</label>
       <label class="switch">
-        <input type="checkbox" id="hideResponsesToggle" />
+        <input type="checkbox" id="hideResponsesToggle" disabled />
         <span class="slider"></span>
       </label>
     </div>
 
     <!-- Hide Schemas Toggle -->
     <div class="toggle-container">
-      <span class="toggle-label">Hide schemas</span>
+      <label class="toggle-label" for="hideSchemasToggle" title="Collapse Schemas on load. Explicit schema links can still open them.">Collapse schemas</label>
       <label class="switch">
-        <input type="checkbox" id="hideSchemasToggle" />
+        <input type="checkbox" id="hideSchemasToggle" disabled />
         <span class="slider"></span>
       </label>
     </div>
 
+    <div class="toggle-container">
+      <label class="toggle-label" for="schemaPreviewToggle" title="Preview fields and types next to schema links, without leaving the operation">Schema preview</label>
+      <label class="switch">
+        <input type="checkbox" id="schemaPreviewToggle" disabled />
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <details id="swagger-site-settings">
+      <summary>Sites <span id="swagger-site-count"></span></summary>
+      <div class="swagger-site-editor">
+        <label for="swagger-site-input">Show the panel on these addresses</label>
+        <div id="swagger-site-tags">
+          <div id="swagger-site-list"></div>
+          <input id="swagger-site-input" type="text" placeholder="api.example.com, localhost:8080" autocomplete="off" spellcheck="false" disabled />
+        </div>
+        <p class="swagger-site-help">Add domains or URL patterns, separated by commas. Swagger UI must be present.</p>
+        <div class="swagger-site-actions">
+          <button id="swagger-site-save" type="button" disabled>Save sites</button>
+          <button id="swagger-site-defaults" type="button" disabled>Restore defaults</button>
+        </div>
+        <p id="swagger-site-status" role="status" aria-live="polite"></p>
+        <p id="swagger-site-error" role="alert" hidden></p>
+      </div>
+    </details>
+
+    <section id="swagger-support-panel" aria-labelledby="swagger-support-title">
+      <div class="swagger-support-heading">
+        <span class="swagger-support-mascot" data-support-mascot aria-hidden="true"></span>
+        <div class="swagger-support-copy">
+          <h2 id="swagger-support-title">Like it? <a data-support-review href="https://chromewebstore.google.com/detail/swagger-enhancer/dnadagbnobcgafbdebbabcgicfkpciam/reviews" target="_blank" rel="noopener noreferrer" aria-label="Rate Swagger Enhancer in Chrome Web Store (opens in a new tab)">Rate it</a></h2>
+          <p>Your rating helps us grow.</p>
+        </div>
+      </div>
+      <div class="swagger-support-share-row">
+        <button data-support-share type="button">Share link</button>
+        <a class="swagger-support-issue" href="https://github.com/artemy-sh/swagger-enhancer/issues" target="_blank" rel="noopener noreferrer" title="Report an issue or suggest a feature on GitHub" aria-label="Report an issue or suggest a feature on GitHub (opens in a new tab)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.01.08-2.11 0 0 .67-.21 2.2.82a7.62 7.62 0 012.01-.27c.68 0 1.36.09 2.01.27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.91.08 2.11.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.19 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          <span>Report an issue</span>
+        </a>
+      </div>
+      <p class="swagger-support-status" role="status" aria-live="polite"></p>
+      <input data-support-url type="url" readonly hidden aria-label="Extension link to copy" />
+    </section>
   </div>
 
+  <script src="js/site_rules.js"></script>
+  <script src="js/site_settings.js"></script>
+  <script src="js/mascot.js"></script>
+  <script src="js/extension_support.js"></script>
   <script src="js/popup.js"></script>
 </body>
 </html>

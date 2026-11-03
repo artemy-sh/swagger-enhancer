@@ -28,6 +28,7 @@ function setup(t, pkg, options = {}) {
   w.chrome = { runtime: { getURL: p => `chrome-extension://test/${p}` } };
   const load = name => w.eval(fs.readFileSync(path.join(root, 'js', name + '.js'), 'utf8'));
   load('utils');
+  load('favorites_store');
   w.eval(fs.readFileSync(require.resolve(pkg + '/swagger-ui-bundle.js'), 'utf8'));
   // Swagger gives each afterLoad a separate bound system. Record the bridge's
   // system so navigation/privacy spies observe the calls it actually makes.
@@ -49,8 +50,8 @@ function setup(t, pkg, options = {}) {
     responses: { 200: { description: 'OK' } }
   } };
   const spec = { openapi: '3.0.0', info: { title: 'Regression', version: '1' }, paths };
-  w.SwaggerUIBundle({ spec, validatorUrl: null, ...(options.render ? { dom_id: '#test-swagger' } : {}) });
-  const send = (name, detail) => d.dispatchEvent(new w.CustomEvent('swagger-enhancer:' + name, { detail: JSON.stringify(detail) }));
+  w.SwaggerUIBundle({ spec, validatorUrl: null, ...(options.specURL ? { url: options.specURL } : {}), ...(options.render ? { dom_id: '#test-swagger' } : {}) });
+  const send = (name, detail) => d.dispatchEvent(new w.CustomEvent('swagger-enhancer:' + name, { detail: JSON.stringify(name === 'favorites-update' ? { ...detail, favorites: w.SwaggerEnhancerFavoritesStore.getFavorites() } : detail) }));
   const entries = () => {
     let result;
     d.addEventListener('swagger-enhancer:search-index', event => { result = JSON.parse(event.detail); }, { once: true });
@@ -108,13 +109,13 @@ for (const pkg of ['swagger-ui-dist', 'swagger-ui-legacy']) {
     const f = feature('favorites', 'FavoritesFeature');
     assert.equal(entries().filter(e => e.type === 'route').length, 400);
     d.querySelector('#swagger-fav-filter').click();
-    assert.equal(w.localStorage.getItem('swaggerFavoritesFilterState'), '1');
+    assert.equal(w.localStorage.getItem(w.SwaggerEnhancerFavoritesStore.keys().filter), '1');
     assert.deepEqual(entries().filter(e => e.type === 'route').map(e => e.path), ['/pets/0', '/pets/399']);
     assert.equal(entries().filter(e => e.type === 'tag').length, 2);
     d.querySelector('#swagger-fav-filter').click();
     assert.equal(entries().filter(e => e.type === 'route').length, 398);
     d.querySelector('.swagger-fav-all').click();
-    assert.equal(Object.keys(JSON.parse(w.localStorage.getItem('swaggerFavorites'))).length, 400);
+    assert.equal(Object.keys(w.SwaggerEnhancerFavoritesStore.getFavorites()).length, 400);
     assert.equal(entries().length, 0);
     d.querySelector('.swagger-fav-reset').click();
     assert.equal(entries().filter(e => e.type === 'route').length, 400);
@@ -143,6 +144,16 @@ for (const pkg of ['swagger-ui-dist', 'swagger-ui-legacy']) {
     send('favorites-update', { enabled: false, filterState: 1 });
     f.performSearch('/pets/0', results); assert.match(results.textContent, /\/pets\/0/);
     await pause();
+  });
+
+  test(`${pkg}: resolving an unchanged operation replaces the loading indicator`, async t => {
+    const { d } = setup(t, pkg, { render: true });
+    for (let i = 0; i < 100 && !d.querySelector('.opblock-summary-control'); i++) await new Promise(resolve => setTimeout(resolve, 10));
+    d.querySelector('.opblock-summary-control').click();
+    for (let i = 0; i < 100 && !d.querySelector('.opblock.is-open .opblock-description-wrapper'); i++) await new Promise(resolve => setTimeout(resolve, 10));
+    assert.match(d.querySelector('.opblock.is-open').textContent, /Description marker0/);
+    assert.match(d.querySelector('.opblock.is-open').textContent, /No parameters/);
+    assert.equal(d.querySelector('.opblock.is-open .loading-container'), null);
   });
 
   test(`${pkg}: equivalent selectors stay stable; a replaced spec invalidates the index`, async t => {
@@ -216,4 +227,60 @@ for (const pkg of ['swagger-ui-dist', 'swagger-ui-legacy']) {
     assert.equal(reads, before); assert.deepEqual(identities, []);
     await pause();
   });
+  test(`${pkg}: specification changes isolate favorites and preserve them across version updates`, async t => {
+    const { w, d, system, spec, entries, feature } = setup(t, pkg);
+    const f = feature('favorites', 'FavoritesFeature');
+    system.specActions.updateUrl('/spec-a.json');
+    assert.equal(w.SwaggerEnhancerFavoritesStore.scope, 'url:https://example.test/spec-a.json');
+    f.saveFavoritesMap({ 'GET /pets/0': true });
+    d.querySelector('#swagger-fav-filter').click();
+    assert.equal(entries().filter(e => e.type === 'route').length, 1);
+    system.specActions.updateUrl('/spec-b.json');
+    system.specActions.updateJsonSpec({ ...spec, info: { ...spec.info, title: 'Other API' } });
+    assert.equal(f.filterState, 0);
+    assert.equal(Object.keys(f.getFavoritesMap()).length, 0);
+    f.saveFavoritesMap({ 'GET /pets/1': true }); f.applyFavoriteFilter();
+    system.specActions.updateUrl('/spec-a.json');
+    system.specActions.updateJsonSpec({ ...spec, info: { ...spec.info, version: '2' } });
+    assert.equal(f.filterState, 1);
+    assert.deepEqual(entries().filter(e => e.type === 'route').map(e => e.path), ['/pets/0']);
+    await pause();
+  });
+
+  test(`${pkg}: replacing a Swagger instance removes old bridge listeners`, async t => {
+    const { w, d, spec, entries } = setup(t, pkg);
+    w.SwaggerUIBundle({ spec: { ...spec, paths: { '/replacement': spec.paths['/pets/0'] } }, validatorUrl: null });
+    let replies = 0;
+    d.addEventListener('swagger-enhancer:search-index', () => replies++);
+    assert.deepEqual(entries().filter(e => e.type === 'route').map(e => e.path), ['/replacement']);
+    assert.equal(replies, 1);
+    await pause();
+  });
+
+  test(`${pkg}: inline APIs use page and title identity while versions retain favorites`, async t => {
+    const { system, spec, feature } = setup(t, pkg);
+    const f = feature('favorites', 'FavoritesFeature');
+    f.saveFavoritesMap({ 'GET /pets/0': true });
+    system.specActions.updateJsonSpec({ ...spec, info: { ...spec.info, version: '2' } });
+    assert.equal(f.getFavoritesMap()['GET /pets/0'], true);
+    system.specActions.updateJsonSpec({ ...spec, info: { title: 'Another inline API', version: '1' } });
+    assert.equal(Object.keys(f.getFavoritesMap()).length, 0);
+    system.specActions.updateJsonSpec(spec);
+    assert.equal(f.getFavoritesMap()['GET /pets/0'], true);
+    await pause();
+  });
+
+  test(`${pkg}: clearing an external URL switches to isolated inline favorites`, async t => {
+    const { w, system, spec, feature } = setup(t, pkg, { specURL: '/external.json' });
+    system.specActions.updateUrl('/external.json');
+    const f = feature('favorites', 'FavoritesFeature');
+    assert.equal(w.SwaggerEnhancerFavoritesStore.scope, 'url:https://example.test/external.json');
+    f.saveFavoritesMap({ 'GET /pets/0': true });
+    system.specActions.updateUrl('');
+    system.specActions.updateJsonSpec({ ...spec, info: { ...spec.info, title: 'Inline replacement' } });
+    assert.match(w.SwaggerEnhancerFavoritesStore.scope, /^inline:/);
+    assert.equal(Object.keys(f.getFavoritesMap()).length, 0);
+    await pause();
+  });
+
 }

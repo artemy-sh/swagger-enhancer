@@ -4,7 +4,7 @@
 
   class CopyURLFeature extends window.SwaggerEnhancerUtils.features.BaseFeature {
     constructor() {
-      super('copyFullUrlEnabled', 'css/copy_url.css', { messageType: 'TOGGLE_COPY_FULL_URL' });
+      super('copyFullUrlEnabled', null, { messageType: 'TOGGLE_COPY_FULL_URL' });
       this.readyHandler = () => this.syncUIState();
     }
 
