@@ -331,7 +331,9 @@
               type: match.type, tag: match.tag, method: match.method, path: match.path
             }) }));
           } else if (match.el?.isConnected) {
-            window.SwaggerEnhancerUtils.dom.smoothScrollToElement(match.el, this.getMenuHeight());
+            const target = match.type === 'route' ? match.el.querySelector('.opblock-summary') || match.el : match.el;
+            const menuBottom = document.getElementById(MENU_ID)?.getBoundingClientRect().bottom ?? FALLBACK_MENU_H;
+            window.SwaggerEnhancerUtils.dom.smoothScrollToElement(target, menuBottom + 8);
           }
           this.closeResults(resultsContainer);
           this.searchActive = false;
@@ -366,10 +368,6 @@
     }
 
     // === Utility Methods ===
-
-    getMenuHeight() {
-      return document.getElementById(MENU_ID)?.offsetHeight || FALLBACK_MENU_H;
-    }
 
     escapeHtml(text) {
       const div = document.createElement('div');

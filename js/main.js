@@ -23,7 +23,12 @@
       copyURL: window.CopyURLFeature
     };
     Object.entries(features).forEach(([name, Feature]) => manager.register(name, Feature));
-    manager.initAll().then(() => console.log('Swagger Enhancer: Ready'));
+    document.dispatchEvent(new Event('swagger-enhancer:activate'));
+    const root = currentRoot;
+    manager.initAll().then(() => {
+      if (root !== currentRoot) return;
+      console.log('Swagger Enhancer: Ready');
+    });
   };
 
   const reconcileSwagger = () => {
@@ -84,6 +89,6 @@
     manager: () => manager,
     utils: () => window.SwaggerEnhancerUtils,
     features: () => manager.getAllFeatures(),
-    version: '2.1.0'
+    version: '2.1.1'
   };
 })();

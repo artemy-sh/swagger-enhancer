@@ -43,6 +43,16 @@
   const SEARCH_INDEX = 'swagger-enhancer:search-index';
   const SEARCH_CHANGED = 'swagger-enhancer:search-changed';
   const SEARCH_NAVIGATE = 'swagger-enhancer:search-navigate';
+  const getOperationId = (system, operation) => operation.getIn(['operation', '__originalOperationId']) ||
+    operation.getIn(['operation', 'operationId']) ||
+    system.fn?.opId?.(operation.get('operation'), operation.get('path'), operation.get('method')) ||
+    operation.get('id');
+  const readOperationLink = () => {
+    const match = location.hash.match(/^#\/(.+)\/([^/]+)$/);
+    if (!match) return null;
+    try { return { tag: decodeURIComponent(match[1]), id: decodeURIComponent(match[2]) }; }
+    catch { return null; }
+  };
   const AUTH_REQUEST = 'swagger-enhancer:auth-identity-request';
   const AUTH_IDENTITY = 'swagger-enhancer:auth-identity';
   const AUTH_CHANGED = 'swagger-enhancer:auth-changed';
@@ -158,17 +168,25 @@
   const plugin = options => {
     let specSystem;
     let schemaNavigation;
+    let pendingLink;
+    let followOperationLink;
+    let navigationFrame;
+    let restoreScrollBehavior;
     let selectedURL;
     const disposers = [];
-    const listen = (name, handler) => {
-      document.addEventListener(name, handler);
-      disposers.push(() => document.removeEventListener(name, handler));
+    const listen = (name, handler, target = document) => {
+      target.addEventListener(name, handler);
+      disposers.push(() => target.removeEventListener(name, handler));
+    };
+    const cancelNavigation = () => {
+      cancelAnimationFrame(navigationFrame);
+      restoreScrollBehavior?.();
+      restoreScrollBehavior = null;
     };
     disposeBridge = () => {
-      specSystem?.layoutActions.clearScrollTo?.();
+      cancelNavigation();
       specSystem = null;
       disposers.forEach(dispose => dispose());
-      cancelAnimationFrame(navigationFrame);
     };
     const scope = () => {
       const url = selectedURL !== undefined ? selectedURL : (specSystem?.specSelectors?.url?.() || options.url);
@@ -186,16 +204,14 @@
       }));
     };
     const specChanged = original => (...args) => {
-      cancelAnimationFrame(navigationFrame);
-      // Swagger UI 4 calls its scroll ref with null while unmounting. A search
-      // target that was already mounted may otherwise leave a stale scroll key.
-      specSystem?.layoutActions.clearScrollTo?.();
       const value = original(...args);
       publishScope(true);
       schemaNavigation?.refresh();
+      if (pendingLink) followOperationLink?.();
       return value;
     };
     const urlChanged = original => (...args) => {
+      cancelNavigation();
       // An explicitly cleared URL selects an inline spec, not the initial URL.
       selectedURL = args[0];
       return specChanged(original)(...args);
@@ -214,7 +230,6 @@
     let searchSource;
     let searchIndex;
     let notificationPending = false;
-    let navigationFrame;
     const publishResult = (value, nativeChanged = false) => {
       const contentsChanged = !result || !value.equals(result);
       if (!nativeChanged && !contentsChanged) return result;
@@ -245,9 +260,9 @@
           const operationId = operation?.get('operationId');
           let docsURL;
           if (typeof tag === 'string' && typeof operationId === 'string' && operationId) {
-            // Use the exact tag and generated operationId used by Swagger's own DeepLink.
+            // Encode the two components separately, including slashes in tag names.
             const url = new URL(window.location.href);
-            url.hash = '/' + `${tag}/${operationId}`.trim().replace(/\s/g, '%20');
+            url.hash = `/${encodeURIComponent(tag)}/${encodeURIComponent(operationId)}`;
             docsURL = url.href;
           }
           React.useLayoutEffect(() => {
@@ -388,9 +403,9 @@
         schemaNavigation = window.SwaggerEnhancerSchemaNavigation?.attach(system);
         disposers.push(() => schemaNavigation?.destroy());
         listen('swagger-enhancer:detach', () => {
-          cancelAnimationFrame(navigationFrame);
+          cancelNavigation();
+          pendingLink = null;
           schemaNavigation?.cancel();
-          system.layoutActions.clearScrollTo?.();
         });
         listen('swagger-enhancer:scope-request', () => publishScope());
         publishScope();
@@ -427,58 +442,119 @@
           }
           document.dispatchEvent(new CustomEvent(SEARCH_INDEX, { detail: searchIndex }));
         });
+        const navigate = (tag, operation, fromLink = false) => {
+          cancelNavigation();
+          const route = operation && ['operations', tag, getOperationId(system, operation)];
+          const group = ['operations-tag', tag];
+          const key = route || group;
+          const actions = system.layoutActions;
+          const smooth = !fromLink && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+          actions.show(group, true);
+          if (route) actions.show(route, true);
+
+          const routeId = route && route.join('-').trim().replace(/\s/g, '_');
+          const findTarget = () => {
+            if (!route) return [...document.querySelectorAll('.swagger-ui h3.opblock-tag')].find(el => el.dataset.tag === tag);
+            const block = document.getElementById(routeId);
+            return block?.matches('.swagger-ui .opblock') ? block.querySelector('.opblock-summary') : null;
+          };
+          // Ask Swagger to locate unmounted items. Its virtualizer uses behavior
+          // "auto", so the scroll container controls whether that moves smoothly.
+          let virtualScroller;
+          let virtualRetryAt;
+          let alignmentRequested = false;
+          const deadline = performance.now() + 5000;
+          let previousTop, previousHeight;
+          let stableFrames = 0;
+          const settle = () => {
+            const now = performance.now();
+            const element = findTarget();
+            const list = document.querySelector('.swagger-ui .operations-virtual');
+            if (!element && list && !virtualScroller && actions.scrollToVirtualizedOperation) {
+              const scroller = system.fn?.getScrollParent?.(list) || document.documentElement;
+              const previous = scroller.style.getPropertyValue('scroll-behavior');
+              const priority = scroller.style.getPropertyPriority('scroll-behavior');
+              scroller.style.setProperty('scroll-behavior', smooth ? 'smooth' : 'auto', 'important');
+              restoreScrollBehavior = () => scroller.style.setProperty('scroll-behavior', previous, priority);
+              virtualScroller = scroller;
+              if (smooth) virtualRetryAt = now + 1200;
+              actions.scrollToVirtualizedOperation(key);
+            }
+            // Swagger can keep restarting its smooth scroll as it measures new rows.
+            // Finish locating the item with an immediate scroll if it still hasn't mounted.
+            if (!element && list && now >= virtualRetryAt) {
+              virtualScroller.style.setProperty('scroll-behavior', 'auto', 'important');
+              actions.scrollToVirtualizedOperation(key);
+              virtualRetryAt = undefined;
+            }
+            const row = element?.getBoundingClientRect();
+            const block = route ? element?.closest('.opblock') : null;
+            const height = block?.offsetHeight;
+            const top = row?.top;
+            const expired = now >= deadline;
+            // Both the virtual list and the operation body can change the row's
+            // position during expansion. Check again after the final scroll.
+            stableFrames = row && top === previousTop && height === previousHeight ? stableFrames + 1 : 0;
+            previousTop = top;
+            previousHeight = height;
+            const loading = block?.querySelector('.opblock-body :is(.loading-container, .opblock-loading-animation)');
+            const canAlign = !alignmentRequested && (fromLink || stableFrames >= 2);
+            const canFinish = alignmentRequested && stableFrames >= 10 && !loading;
+            if (row && (canAlign || canFinish || expired)) {
+              const header = document.getElementById('swagger-floating-menu')?.getBoundingClientRect().bottom ?? 55;
+              if (alignmentRequested && row.top >= header + 4 && row.bottom <= window.innerHeight) {
+                cancelNavigation();
+                return;
+              }
+              const previousMargin = element.style.scrollMarginTop;
+              element.style.scrollMarginTop = `${header + 8}px`;
+              element.scrollIntoView({ block: 'start', behavior: smooth && !alignmentRequested && !expired ? 'smooth' : 'instant' });
+              element.style.scrollMarginTop = previousMargin;
+              alignmentRequested = true;
+              stableFrames = 0;
+            }
+            if (!expired) navigationFrame = requestAnimationFrame(settle);
+            else cancelNavigation();
+          };
+          navigationFrame = requestAnimationFrame(settle);
+        };
+        followOperationLink = () => {
+          if (!pendingLink) return;
+          const { tag, id } = pendingLink;
+          const operation = system.specSelectors.taggedOperations?.()?.get(tag)?.get('operations')
+            .find(op => getOperationId(system, op) === id);
+          if (!operation) return; // An asynchronous spec will retry after updateJsonSpec.
+          pendingLink = null;
+          navigate(tag, operation, true);
+        };
+        const locationChanged = () => {
+          if (!document.body?.classList.contains('swagger-enhancer-active')) return;
+          cancelNavigation();
+          pendingLink = readOperationLink();
+          followOperationLink();
+        };
+        listen('swagger-enhancer:activate', locationChanged);
+        listen('hashchange', locationChanged, window);
+        listen('wheel', cancelNavigation);
+        listen('pointerdown', cancelNavigation);
+        listen('keydown', event => {
+          if (['Escape', 'PageUp', 'PageDown', 'ArrowUp', 'ArrowDown', 'Home', 'End', ' '].includes(event.key)) {
+            cancelNavigation();
+          }
+        });
+        locationChanged();
+
         listen(SEARCH_NAVIGATE, event => {
           let target;
           try { target = JSON.parse(event.detail); } catch { return; }
           if (!target || !['route', 'tag'].includes(target.type) || typeof target.tag !== 'string') return;
           const group = system.specSelectors.taggedOperations().get(target.tag);
           if (!group) return;
-          let key = ['operations-tag', target.tag];
-          if (target.type === 'route') {
-            const op = group.get('operations').find(op => op.get('path') === target.path &&
-              String(op.get('method')).toUpperCase() === target.method);
-            if (!op) return;
-            const operationId = op.getIn(['operation', '__originalOperationId']) || op.getIn(['operation', 'operationId']) ||
-              `${op.get('method')}${op.get('path').replace(/\W/g, '_')}`;
-            key = ['operations', target.tag, operationId];
-          }
-          const actions = system.layoutActions;
-          actions.show(['operations-tag', target.tag], true);
-          actions.show(key, true);
-          actions.scrollTo(key);
-          actions.scrollToVirtualizedOperation?.(key);
-
-          // Let Swagger mount/measure the target, then account for the fixed header.
-          // Unlike the old DOM-only search, this also reaches initially unmounted rows.
-          cancelAnimationFrame(navigationFrame);
-          let attempts = 0;
-          let previousTop;
-          let stableFrames = 0;
-          const settle = () => {
-            const element = target.type === 'tag'
-              ? [...document.querySelectorAll('.swagger-ui h3.opblock-tag')].find(el => el.dataset.tag === target.tag)
-              : [...document.querySelectorAll('.swagger-ui .opblock')].find(el => {
-                const sectionTag = el.closest('.opblock-tag-section')?.querySelector('h3.opblock-tag')?.dataset.tag;
-                return (!sectionTag || sectionTag === target.tag) &&
-                  el.querySelector('.opblock-summary-method')?.textContent.trim() === target.method &&
-                  el.querySelector('.opblock-summary-path')?.textContent.trim() === target.path;
-              });
-            const top = element?.getBoundingClientRect().top;
-            stableFrames = top !== undefined && top === previousTop ? stableFrames + 1 : 0;
-            previousTop = top;
-            if (element && stableFrames >= 3) {
-              const header = document.getElementById('swagger-floating-menu')?.offsetHeight || 55;
-              const previousMargin = element.style.scrollMarginTop;
-              element.style.scrollMarginTop = `${header + 8}px`;
-              element.scrollIntoView({ block: 'start', behavior: 'instant' });
-              element.style.scrollMarginTop = previousMargin;
-              actions.clearScrollTo?.();
-              return;
-            }
-            if (++attempts < 120) navigationFrame = requestAnimationFrame(settle);
-            else actions.clearScrollTo?.();
-          };
-          navigationFrame = requestAnimationFrame(settle);
+          const operation = target.type === 'route' && group.get('operations').find(op => op.get('path') === target.path &&
+            String(op.get('method')).toUpperCase() === target.method);
+          if (target.type === 'route' && !operation) return;
+          pendingLink = null;
+          navigate(target.tag, operation);
         });
         listen(SELECT_ALL, () => {
           if (!enabled) return;

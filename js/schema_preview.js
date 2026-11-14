@@ -7,6 +7,15 @@
     if (text !== undefined) node.textContent = text;
     return node;
   };
+  const icon = path => {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const line = document.createElementNS(svg.namespaceURI, 'path');
+    svg.setAttribute('viewBox', '0 0 16 16');
+    svg.setAttribute('aria-hidden', 'true');
+    line.setAttribute('d', path);
+    svg.append(line);
+    return svg;
+  };
   class SchemaPreviewFeature extends window.SwaggerEnhancerUtils.features.BaseFeature {
     constructor() {
       super('schemaPreviewEnabled', 'css/schema_preview.css', { messageType: 'TOGGLE_SCHEMA_PREVIEW' });
@@ -124,9 +133,10 @@
       for (const [name, property] of properties.slice(0, 100)) {
         const row = make('div', 'swagger-schema-preview-property');
         const heading = make('div', 'swagger-schema-preview-property-heading');
-        heading.append(make('code', 'swagger-schema-preview-name', name));
-        if (required.has(name)) heading.append(make('span', 'swagger-schema-preview-required', 'required'));
-        this.summary(property, heading);
+        const meta = make('div', 'swagger-schema-preview-property-meta');
+        if (required.has(name)) meta.append(make('span', 'swagger-schema-preview-required', 'required'));
+        this.summary(property, meta);
+        heading.append(make('code', 'swagger-schema-preview-name', name), meta);
         row.append(heading);
         if (property?.description) row.append(make('p', 'swagger-schema-preview-description', String(property.description)));
         if (Array.isArray(property?.enum)) row.append(make('code', 'swagger-schema-preview-enum', property.enum.slice(0, 10).map(value => JSON.stringify(value)).join(', ') + (property.enum.length > 10 ? ', …' : '')));
@@ -170,25 +180,40 @@
       this.current = { data, href };
       this.panel.replaceChildren();
       const header = make('div', 'swagger-schema-preview-header');
-      if (this.history.length) {
-        const back = make('button', 'swagger-schema-preview-back', 'Back'); back.type = 'button';
-        back.addEventListener('click', () => {
-          const previous = this.history.pop(); this.render(previous.data, previous.href);
-          // The old Back button was removed by render. Keep keyboard navigation
-          // inside the card even when returning to its first schema.
-          this.panel.querySelector('.swagger-schema-preview-back, .swagger-schema-preview-close')?.focus({ preventScroll: true });
-        });
-        header.append(back);
-      }
-      const title = make('h3', '', data.name); title.title = data.name; title.id = 'swagger-schema-preview-title';
-      const close = make('button', 'swagger-schema-preview-close', '×'); close.type = 'button'; close.setAttribute('aria-label', 'Close schema preview');
+      const heading = make('div', 'swagger-schema-preview-heading');
+      const title = make('h3');
+      title.title = data.name;
+      title.id = 'swagger-schema-preview-title';
+      // Keep schema identifiers intact while allowing long CamelCase names to wrap at word boundaries.
+      data.name.split(/(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])/).forEach((part, index) => {
+        if (index) title.append(make('wbr'));
+        title.append(part);
+      });
+      heading.append(title, make('code', 'swagger-schema-preview-root-type', this.type(data.schema)));
+      const close = make('button', 'swagger-schema-preview-close');
+      close.type = 'button';
+      close.setAttribute('aria-label', 'Close schema preview');
+      close.append(icon('M4 4l8 8M12 4l-8 8'));
       close.addEventListener('click', () => this.close(true));
-      header.append(title, close);
+      header.append(heading, close);
       const body = make('div', 'swagger-schema-preview-body');
-      body.append(make('code', 'swagger-schema-preview-root-type', this.type(data.schema)));
       this.schema(data.schema, body);
       const footer = make('div', 'swagger-schema-preview-footer');
-      const full = make('a', '', 'Open in Schemas'); full.href = href;
+      if (this.history.length) {
+        const back = make('button', 'swagger-schema-preview-back');
+        back.type = 'button';
+        back.append(icon('M13 8H3m4-4L3 8l4 4'), 'Back');
+        back.addEventListener('click', () => {
+          const previous = this.history.pop();
+          this.render(previous.data, previous.href);
+          (this.panel.querySelector('.swagger-schema-preview-back') ||
+            this.panel.querySelector('.swagger-schema-preview-close')).focus({ preventScroll: true });
+        });
+        footer.append(back);
+      }
+      const full = make('a', 'swagger-schema-preview-full', 'Open in Schemas');
+      full.append(icon('M6 4l4 4-4 4'));
+      full.href = href;
       full.addEventListener('click', event => {
         if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0) {
           event.preventDefault();

@@ -176,14 +176,14 @@ for (const pkg of ['swagger-ui-dist', 'swagger-ui-legacy']) {
   test(`${pkg}: navigation revalidates scope and opens offscreen operations without executing`, t => {
     const { w, system, send } = setup(t, pkg);
     const calls = [];
-    for (const action of ['show', 'scrollTo', 'scrollToVirtualizedOperation']) {
+    for (const action of ['show', 'scrollToVirtualizedOperation']) {
       system.layoutActions[action] = (...args) => calls.push([action, ...args]);
     }
     system.specActions.execute = () => assert.fail('search must never execute an API operation');
     w.requestAnimationFrame = () => 1; w.cancelAnimationFrame = () => {};
     const target = { type: 'route', tag: 'Group 19', path: '/pets/399', method: 'GET' };
     send('search-navigate', target);
-    assert.equal(calls.length, 4);
+    assert.equal(calls.length, 2);
     assert.equal(JSON.stringify(calls[1]), JSON.stringify(['show', ['operations', 'Group 19', 'readPet399'], true]));
     calls.length = 0;
     send('favorites-update', { enabled: true, filterState: 1 });

@@ -163,6 +163,10 @@
 
         const startY = window.scrollY;
         const targetY = element.getBoundingClientRect().top + startY - offset;
+        if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+          window.scrollTo({ top: targetY, behavior: 'instant' });
+          return;
+        }
         const distance = targetY - startY;
         let start = null;
 

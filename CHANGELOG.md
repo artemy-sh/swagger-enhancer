@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.1.1 - 2026-11-15
+
+- Search scrolls smoothly to tags and operations, including offscreen results.
+- Copied documentation links land on the operation while its details load, even when Swagger UI has deep linking disabled.
+- Search and documentation links keep the operation's method and path visible below the fixed toolbar.
+- Schema previews match the extension's light and dark themes and keep long names readable on narrow screens.
+
 ## 2.1.0 - 2026-11-04
 
 ### Added

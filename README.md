@@ -6,7 +6,7 @@
 [![Chrome / Edge / Yandex](https://img.shields.io/badge/platform-Chrome%20%7C%20Edge%20%7C%20Yandex-blue)](#requirements-and-privacy)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![UI Enhancer](https://img.shields.io/badge/type-Swagger%20UI%20enhancer-orange)](#features)
-[![Version](https://img.shields.io/badge/version-2.1.0-lightgrey)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.1.1-lightgrey)](CHANGELOG.md)
 
 [Русский](README_RU.md) | [Releases](https://github.com/artemy-sh/swagger-enhancer/releases) | [Changelog](CHANGELOG.md) | [Chrome Web Store](https://chromewebstore.google.com/detail/swagger-enhancer/dnadagbnobcgafbdebbabcgicfkpciam)
 

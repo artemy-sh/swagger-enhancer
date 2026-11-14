@@ -18,9 +18,28 @@ const largeSpec = {
     const group = Math.floor(index / 20);
     const route = `/group-${group}/route-${index % 20}`;
     return [route, { get: { ...spec.paths['/pets'].get, tags: [`Group ${group}`], summary: `Operation ${index}`,
-      ...(index === 399 ? { operationId: 'farOperation', description: 'Unique distant description needle' } : {}) } }];
+      ...(index === 399 ? { operationId: 'farOperation',
+        description: Array(30).fill('Unique distant description needle').join('\n\n') } : {}) } }];
   }))
 };
+
+async function expectRouteBelowHeader(route) {
+  const summary = route.locator('.opblock-summary');
+  await expect.poll(() => summary.evaluate(async element => {
+    const header = document.getElementById('swagger-floating-menu');
+    // Check the landing position after scrolling stops. A row passing through
+    // the viewport can be visible for a frame and still end up under the menu.
+    const samples = [];
+    for (let frame = 0; frame < 12; frame++) {
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      const row = element.getBoundingClientRect();
+      samples.push([row.top, row.bottom, header.getBoundingClientRect().bottom]);
+    }
+    const [top, bottom, headerBottom] = samples.at(-1);
+    return top >= headerBottom + 4 && bottom <= innerHeight &&
+      samples.every(([y]) => Math.abs(y - top) <= 1);
+  })).toBe(true);
+}
 
 async function assertContinuousScrolling(page) {
   const samples = await page.evaluate(async () => {
@@ -65,15 +84,35 @@ test(`installed MV3 extension with ${swaggerPackage}: popup, settings sync, favo
     }
     if (url.pathname === '/init.js') {
       res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
-      res.end(`window.fixtureUI = SwaggerUIBundle({ url: '/spec' + location.search, dom_id: '#swagger', validatorUrl: null, docExpansion: new URLSearchParams(location.search).has('collapsed') ? 'none' : 'list' });`); return;
+      res.end(`const params = new URLSearchParams(location.search);
+        const delayOperation = () => ({
+          statePlugins: { spec: { wrapActions: {
+            requestResolvedSubtree: original => path => {
+              if (params.has('slow-operation') && String(path[1]) === '/group-19/route-19' && !window.resolveOperation) {
+                window.resolveOperation = () => original(path);
+                return;
+              }
+              if (!params.has('slow-operation') || String(path[1]) !== '/group-19/route-19') return original(path);
+            }
+          } } }
+        });
+        window.fixtureUI = SwaggerUIBundle({ url: '/spec' + location.search, dom_id: '#swagger', validatorUrl: null,
+          deepLinking: params.has('native-links'), docExpansion: params.has('collapsed') ? 'none' : 'list',
+          plugins: [delayOperation] });`); return;
     }
     if (['/swagger-ui-bundle.js', '/swagger-ui.css'].includes(url.pathname)) {
       res.setHeader('Content-Type', url.pathname.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8');
       fs.createReadStream(path.join(swaggerDir, url.pathname.slice(1))).pipe(res); return;
     }
+    if (url.pathname === '/toolbar-offset.css') {
+      res.setHeader('Content-Type', 'text/css; charset=utf-8');
+      res.end('#swagger-floating-menu { top: 24px !important; }');
+      return;
+    }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Content-Security-Policy', "script-src 'self'; object-src 'none'");
-    res.end(url.pathname === '/plain-docs' ? '<!doctype html><body>Ordinary documentation</body>' : '<!doctype html><html><head><link rel="stylesheet" href="/swagger-ui.css"></head><body><div id="swagger"></div><script src="/swagger-ui-bundle.js"></script><script src="/init.js"></script></body></html>');
+    const toolbarOffset = url.searchParams.has('native-links') ? '<link rel="stylesheet" href="/toolbar-offset.css">' : '';
+    res.end(url.pathname === '/plain-docs' ? '<!doctype html><body>Ordinary documentation</body>' : `<!doctype html><html><head><link rel="stylesheet" href="/swagger-ui.css">${toolbarOffset}</head><body><div id="swagger"></div><script src="/swagger-ui-bundle.js"></script><script src="/init.js"></script></body></html>`);
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   t.after(() => new Promise(resolve => server.close(resolve)));
@@ -558,10 +597,57 @@ test(`installed MV3 extension with ${swaggerPackage}: popup, settings sync, favo
     await searchInput.fill(query);
     await expect(searchResults.locator('.route-path')).toHaveText('/group-19/route-19');
   }
+  await page.evaluate(() => {
+    window.searchScrollPositions = new Set([scrollY]);
+    window.recordSearchScroll = () => window.searchScrollPositions.add(scrollY);
+    window.addEventListener('scroll', window.recordSearchScroll);
+  });
   await searchResults.locator('.route-path').click();
   await expect(farRoute).toHaveClass(/is-open/);
-  await expect(farRoute.locator('.opblock-summary')).toBeInViewport();
-  await expect.poll(() => farRoute.locator('.opblock-summary').evaluate(el => el.getBoundingClientRect().top)).toBeGreaterThanOrEqual(55);
+  await expectRouteBelowHeader(farRoute);
+  await expect.poll(() => page.evaluate(() => window.searchScrollPositions.size)).toBeGreaterThan(5);
+  await page.evaluate(() => window.removeEventListener('scroll', window.recordSearchScroll));
+
+  await toggle('copyFullUrlToggle', true);
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: {
+      writeText: async text => { window.testLastCopied = text; }
+    } });
+  });
+  await farRoute.locator('.opblock-summary').hover();
+  await farRoute.getByRole('button', { name: 'Copy documentation link' }).click();
+  const copiedLink = await page.evaluate(() => window.testLastCopied);
+  assert.equal(copiedLink, origin + '/docs?large#/Group%2019/farOperation');
+  const linkedPage = await context.newPage();
+  await linkedPage.goto(copiedLink); // deepLinking is disabled in the host configuration.
+  const linkedRoute = linkedPage.locator('.opblock').filter({
+    has: linkedPage.locator('.opblock-summary-path', { hasText: '/group-19/route-19' })
+  });
+  await expect(linkedRoute).toHaveClass(/is-open/);
+  await expectRouteBelowHeader(linkedRoute);
+  await linkedPage.goto(origin + '/docs?large');
+  await linkedPage.evaluate(hash => { location.hash = hash; }, new URL(copiedLink).hash);
+  await expect(linkedRoute).toHaveClass(/is-open/);
+  await expectRouteBelowHeader(linkedRoute);
+  const nativeLink = new URL(copiedLink);
+  nativeLink.searchParams.set('native-links', '');
+  await linkedPage.goto(nativeLink.href);
+  await expect(linkedRoute).toHaveClass(/is-open/);
+  await expectRouteBelowHeader(linkedRoute);
+  const slowLink = new URL(copiedLink);
+  slowLink.searchParams.set('slow-operation', '');
+  await linkedPage.goto(slowLink.href);
+  const loading = linkedRoute.locator('.opblock-body :is(.loading-container, .opblock-loading-animation)');
+  await expect(loading).toBeVisible();
+  await expectRouteBelowHeader(linkedRoute);
+  await expect(loading).toBeVisible(); // The route must land before its body resolves.
+  await linkedPage.evaluate(() => window.resolveOperation());
+  await expect(loading).toHaveCount(0);
+  await expectRouteBelowHeader(linkedRoute);
+  await linkedPage.close();
+  await page.bringToFront();
+  await toggle('copyFullUrlToggle', false);
+
   await expect(scrollTop).toBeVisible();
   await scrollTop.click();
   await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
